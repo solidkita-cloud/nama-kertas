@@ -20,6 +20,7 @@ import { BottomPhilosophyCards } from './components/BottomPhilosophyCards';
 import { RenameModal } from './components/RenameModal';
 import { AgeGateModal } from './components/AgeGateModal';
 import { SupportModal } from './components/SupportModal';
+import { AdminLoginModal } from './components/AdminLoginModal';
 import { PaperIntroSplash } from './components/PaperIntroSplash';
 import { audioEngine } from './utils/audioEngine';
 import {
@@ -39,6 +40,7 @@ export function App() {
   // Modals state
   const [isRenameOpen, setIsRenameOpen] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
   // Stories & Replies state
   const [stories, setStories] = useState<Story[]>(() => {
@@ -247,10 +249,12 @@ export function App() {
           selectedStory ? selectedStory.rasa : selectedRasaFilter !== 'ALL' ? selectedRasaFilter : 'GUNJING'
         }
         onToggleAdmin={() => {
-          const next = !currentUser.isAdmin;
-          setCurrentUser((prev) => ({ ...prev, isAdmin: next }));
-          if (next) {
-            alert('Mode Admin / Kurator Meja Aktif! Anda sekarang dapat menghapus cerita apa pun yang melanggar langsung dari beranda atau layar baca.');
+          if (currentUser.isAdmin) {
+            if (window.confirm('Keluar dari Mode Admin / Kurator Meja?')) {
+              setCurrentUser((prev) => ({ ...prev, isAdmin: false }));
+            }
+          } else {
+            setIsAdminModalOpen(true);
           }
         }}
       />
@@ -390,6 +394,15 @@ export function App() {
         isOpen={isSupportOpen}
         onClose={() => setIsSupportOpen(false)}
         isNightMode={false}
+      />
+
+      {/* Admin Login Modal (Dilindungi Kata Sandi) */}
+      <AdminLoginModal
+        isOpen={isAdminModalOpen}
+        onClose={() => setIsAdminModalOpen(false)}
+        onSuccess={() => {
+          setCurrentUser((prev) => ({ ...prev, isAdmin: true }));
+        }}
       />
     </div>
   );
