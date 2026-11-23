@@ -66,7 +66,14 @@ export function App() {
         };
   });
 
-  const [isAgeGateOpen, setIsAgeGateOpen] = useState(() => !currentUser.isAdultVerified);
+  // Modal 18+ baru dibuka setelah welcome splash ("masa welcome yang keren tadi") selesai
+  const [isAgeGateOpen, setIsAgeGateOpen] = useState(false);
+
+  useEffect(() => {
+    if (!showIntro && !currentUser.isAdultVerified) {
+      setIsAgeGateOpen(true);
+    }
+  }, [showIntro, currentUser.isAdultVerified]);
 
   // Load from Firestore on mount
   useEffect(() => {
