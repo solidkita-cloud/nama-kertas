@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper-bg: #F9F6EE;
+  --color-paper-card: #FFFFFF;
+  --color-paper-border: #E8E2D2;
+  --color-paper-ink: #172132;
+  --color-paper-text: #413D38;
+  --color-paper-muted: #7E786E;
+  
+  --font-serif: "Lora", "Georgia", "Cambria", serif;
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  --font-script: "Alex Brush", cursive, serif;
+  --font-editorial: "Playfair Display", Georgia, serif;
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(120, 110, 95, 0.25);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(120, 110, 95, 0.45);
+}
+
+body {
+  background-color: #F9F6EE;
+  color: #172132;
+  font-family: var(--font-sans);
+  margin: 0;
+  padding: 0;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-serif {
+  font-family: var(--font-serif);
+}
+
+.font-sans {
+  font-family: var(--font-sans);
+}
+
+.font-script {
+  font-family: "Alex Brush", cursive;
+}
+
+.font-editorial {
+  font-family: "Playfair Display", Georgia, serif;
+}
+
+/* Animations for Paper Intro ("sruuttt... terbang") */
+@keyframes inkFlow {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+    filter: blur(4px);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes paperFlyOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg) scale(1);
+    filter: blur(0);
+  }
+  30% {
+    opacity: 0.95;
+    transform: translateY(-20px) rotate(-1.5deg) scale(1.02);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-130px) rotate(-6deg) scale(0.85);
+    filter: blur(6px);
+  }
+}
+
+.animate-ink-flow {
+  animation: inkFlow 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fly-out {
+  animation: paperFlyOut 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}

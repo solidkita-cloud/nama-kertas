@@ -1,0 +1,164 @@
+import {
+  collection,
+  getDocs,
+  addDoc,
+  deleteDoc,
+  doc,
+  query,
+  where,
+  orderBy,
+  serverTimestamp,
+} from 'firebase/firestore';
+import { db, isFirebaseConfigured } from '../firebase';
+import type { Story, Reply } from '../types';
+import { INITIAL_STORIES, INITIAL_REPLIES } from '../data/initialStories';
+
+const LOCAL_STORIES_KEY = 'nama_kertas_stories_v2';
+const LOCAL_REPLIES_KEY = 'nama_kertas_replies_v2';
+
+// 1. Fetch Stories (Firestore with Initial Seeding & Offline Fallback)
+export async function getStories(): Promise<Story[]> {
+  if (isFirebaseConfigured && db) {
+    try {
+      const colRef = collection(db, 'stories');
+      const q = query(colRef, orderBy('createdAt', 'desc'));
+      const snapshot = await getDocs(q);
+
+      if (!snapshot.empty) {
+        return snapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...docSnap.data(),
+        })) as Story[];
+      } else {
+        // First-time seed into Firestore so the database is pre-populated
+        for (const story of INITIAL_STORIES) {
+          try {
+            await addDoc(colRef, {
+              ...story,
+              serverCreatedAt: serverTimestamp(),
+            });
+          } catch (e) {
+            console.warn('Seeding failed (check Firestore rules):', e);
+          }
+        }
+        return INITIAL_STORIES;
+      }
+    } catch (err) {
+      console.warn('Firebase fetch failed, fallback to local storage:', err);
+    }
+  }
+
+  // Fallback to localStorage
+  const saved = localStorage.getItem(LOCAL_STORIES_KEY);
+  return saved ? JSON.parse(saved) : INITIAL_STORIES;
+}
+
+// 2. Save / Publish Story to Firestore
+export async function saveStory(story: Story): Promise<Story> {
+  const createdStory = { ...story };
+
+  if (isFirebaseConfigured && db) {
+    try {
+      const docRef = await addDoc(collection(db, 'stories'), {
+        authorPaperName: story.authorPaperName,
+        authorId: story.authorId,
+        title: story.title,
+        content: story.content,
+        rasa: story.rasa,
+        musicTheme: story.musicTheme,
+        visibility: story.visibility,
+        allowReplies: story.allowReplies,
+        readingTimeMinutes: story.readingTimeMinutes,
+        createdAt: story.createdAt,
+        isSaved: Boolean(story.isSaved),
+        quarantineDetails: story.quarantineDetails || null,
+        serverCreatedAt: serverTimestamp(),
+      });
+      createdStory.id = docRef.id;
+    } catch (err) {
+      console.warn('Firebase save failed, saving locally:', err);
+    }
+  }
+
+  // Always update localStorage as cache / offline support
+  const local = localStorage.getItem(LOCAL_STORIES_KEY);
+  const list: Story[] = local ? JSON.parse(local) : INITIAL_STORIES;
+  const updated = [createdStory, ...list.filter((s) => s.id !== createdStory.id)];
+  localStorage.setItem(LOCAL_STORIES_KEY, JSON.stringify(updated));
+
+  return createdStory;
+}
+
+// 3. Delete Story
+export async function deleteStory(storyId: string): Promise<void> {
+  if (isFirebaseConfigured && db) {
+    try {
+      await deleteDoc(doc(db, 'stories', storyId));
+    } catch (err) {
+      console.warn('Firebase delete failed:', err);
+    }
+  }
+
+  const local = localStorage.getItem(LOCAL_STORIES_KEY);
+  if (local) {
+    const list: Story[] = JSON.parse(local);
+    const updated = list.filter((s) => s.id !== storyId);
+    localStorage.setItem(LOCAL_STORIES_KEY, JSON.stringify(updated));
+  }
+}
+
+// 4. Fetch Replies for a Story
+export async function getReplies(storyId: string): Promise<Reply[]> {
+  if (isFirebaseConfigured && db) {
+    try {
+      const q = query(
+        collection(db, 'replies'),
+        where('storyId', '==', storyId),
+        orderBy('createdAt', 'asc')
+      );
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        return snapshot.docs.map((d) => ({
+          id: d.id,
+          ...d.data(),
+        })) as Reply[];
+      }
+    } catch (err) {
+      console.warn('Firebase replies fetch failed, fallback to local:', err);
+    }
+  }
+
+  const saved = localStorage.getItem(LOCAL_REPLIES_KEY);
+  const allReplies: Reply[] = saved ? JSON.parse(saved) : INITIAL_REPLIES;
+  return allReplies.filter((r) => r.storyId === storyId);
+}
+
+// 5. Add Reply
+export async function addReply(reply: Reply): Promise<Reply> {
+  const created = { ...reply };
+
+  if (isFirebaseConfigured && db) {
+    try {
+      const docRef = await addDoc(collection(db, 'replies'), {
+        storyId: reply.storyId,
+        authorPaperName: reply.authorPaperName,
+        authorId: reply.authorId,
+        parentReplyId: reply.parentReplyId || null,
+        tier: reply.tier,
+        content: reply.content,
+        createdAt: reply.createdAt,
+        serverCreatedAt: serverTimestamp(),
+      });
+      created.id = docRef.id;
+    } catch (err) {
+      console.warn('Firebase addReply failed:', err);
+    }
+  }
+
+  const saved = localStorage.getItem(LOCAL_REPLIES_KEY);
+  const allReplies: Reply[] = saved ? JSON.parse(saved) : INITIAL_REPLIES;
+  const updated = [created, ...allReplies];
+  localStorage.setItem(LOCAL_REPLIES_KEY, JSON.stringify(updated));
+
+  return created;
+}
