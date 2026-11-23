@@ -1,5 +1,5 @@
 import React from 'react';
-import { Feather, ArrowRight, PenLine, Volume2, VolumeX, Play, Pause, Sparkles, ShieldAlert } from 'lucide-react';
+import { Feather, ArrowRight, PenLine, Volume2, VolumeX, Play, Pause, Sparkles, ShieldAlert, ShieldCheck } from 'lucide-react';
 import type { User as UserType, Rasa } from '../types';
 import { audioEngine } from '../utils/audioEngine';
 
@@ -12,6 +12,7 @@ interface HeaderProps {
   onOpenQuarantine: () => void;
   quarantineCount: number;
   currentAmbientRasa: Rasa | null;
+  onToggleAdmin: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -23,6 +24,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenQuarantine,
   quarantineCount,
   currentAmbientRasa,
+  onToggleAdmin,
 }) => {
   const [isPlaying, setIsPlaying] = React.useState(audioEngine.getIsPlaying());
   const [isMuted, setIsMuted] = React.useState(audioEngine.getIsMuted());
@@ -127,6 +129,20 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
             <span>Karantina{quarantineCount > 0 ? ` (${quarantineCount})` : ''}</span>
+          </button>
+
+          {/* Admin / Kurator Meja Toggle */}
+          <button
+            onClick={onToggleAdmin}
+            title={currentUser.isAdmin ? 'Mode Admin/Kurator Aktif (Klik untuk nonaktifkan)' : 'Klik untuk mengaktifkan wewenang Admin / Kurator'}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer border ${
+              currentUser.isAdmin
+                ? 'bg-[#172132] text-amber-300 border-[#172132] shadow-xs'
+                : 'border-[#E0D9C8] text-[#7A746A] hover:text-[#172132] hover:bg-[#F2ECE0] bg-[#FDFCFA]'
+            }`}
+          >
+            <ShieldCheck className={`w-3.5 h-3.5 ${currentUser.isAdmin ? 'text-amber-400' : 'text-[#7A746A]'}`} />
+            <span>{currentUser.isAdmin ? 'Admin (Aktif)' : 'Admin'}</span>
           </button>
 
           {/* Replay Intro Splash Button */}

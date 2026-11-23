@@ -9,6 +9,7 @@ interface MyPaperProfileProps {
   stories: Story[];
   onSelectStory: (story: Story) => void;
   onToggleSave: (storyId: string, e: React.MouseEvent) => void;
+  onDeleteStory?: (storyId: string, e: React.MouseEvent) => void;
 }
 
 export const MyPaperProfile: React.FC<MyPaperProfileProps> = ({
@@ -18,6 +19,7 @@ export const MyPaperProfile: React.FC<MyPaperProfileProps> = ({
   stories,
   onSelectStory,
   onToggleSave,
+  onDeleteStory,
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'MY_STORIES' | 'DRAFTS' | 'SAVED'>('MY_STORIES');
   const [isEditingName, setIsEditingName] = useState(false);
@@ -150,8 +152,10 @@ export const MyPaperProfile: React.FC<MyPaperProfileProps> = ({
               <StoryCard
                 key={story.id}
                 story={story}
+                currentUser={currentUser}
                 onSelect={onSelectStory}
                 onToggleSave={onToggleSave}
+                onDeleteStory={onDeleteStory}
               />
             ))
           )
@@ -167,8 +171,10 @@ export const MyPaperProfile: React.FC<MyPaperProfileProps> = ({
               <StoryCard
                 key={story.id}
                 story={story}
+                currentUser={currentUser}
                 onSelect={onSelectStory}
                 onToggleSave={onToggleSave}
+                onDeleteStory={onDeleteStory}
               />
             ))
           )
@@ -184,8 +190,10 @@ export const MyPaperProfile: React.FC<MyPaperProfileProps> = ({
               <StoryCard
                 key={story.id}
                 story={story}
+                currentUser={currentUser}
                 onSelect={onSelectStory}
                 onToggleSave={onToggleSave}
+                onDeleteStory={onDeleteStory}
               />
             ))
           )

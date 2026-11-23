@@ -46,6 +46,7 @@ export interface User {
   isAdultVerified: boolean;
   paperNameLastChanged: string;
   isLoggedIn: boolean;
+  isAdmin?: boolean;
 }
 
 export interface RasaMeta {

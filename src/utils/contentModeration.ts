@@ -35,12 +35,10 @@ export function normalizeForModeration(input: string): string {
     .replace(/7/g, 't')
     .replace(/v/g, 'u');
 
-  // Strip non-alphanumeric separators (e.g. "s.l.o.t" or "g-a-c-o-r" or "j u d i")
-  // Keep original words and also create collapsed version
   return text;
 }
 
-// Collapsed words (for bypassing spaces: "s l o t" -> "slot")
+// Collapsed words (for bypassing separators: "s.l.o.t" -> "slot")
 function getCollapsedText(text: string): string {
   return text.replace(/[^a-z0-9]/g, '');
 }
@@ -60,7 +58,9 @@ const DICTIONARIES: Record<
       'zeus',
       'pragmatic',
       'scatter',
+      'mahjong',
       'mahjong ways',
+      'rtp',
       'rtp live',
       'rtp slot',
       'depo',
@@ -76,14 +76,15 @@ const DICTIONARIES: Record<
       'poker online',
       'domino qiu',
       'judol',
+      'judi',
       'judi online',
       'freebet',
       'agen slot',
       'link gacor',
       'situs gacor',
-      'jackpot slot',
-      'sensational slot',
-      'olympus slot',
+      'jackpot',
+      'sensational',
+      'olympus',
       'kakek zeus',
       'sweet bonanza',
       'starlight princess',
@@ -130,6 +131,9 @@ const DICTIONARIES: Record<
       'cumi basah',
       'isap kontol',
       'jilat memek',
+      'kentu',
+      'seks bebas',
+      'telanjang',
     ],
     regex: [
       /open[a-z0-9\s]*bo/i,
@@ -142,8 +146,11 @@ const DICTIONARIES: Record<
     description: 'Pelecehan, hinaan terhadap suku, agama, ras, atau golongan tertentu.',
     words: [
       'cina kafir',
+      'cina bodoh',
+      'islam kampung',
       'pribumi bangsat',
       'agama sesat',
+      'kristen sesat',
       'kristenisasi',
       'teroris islam',
       'cokin',
@@ -154,15 +161,28 @@ const DICTIONARIES: Record<
       'dasar arab onta',
       'sesat musyrik laknat',
       'darah halal dibunuh',
+      'kadrun',
+      'cebong',
+      'suku primitif',
+      'sipit pelit',
     ],
     regex: [
-      /dasar\s+(cina|arab|jawa|papua|batak|sunda)\s+(bau|monyet|anjing|babi)/i,
+      // Kombinasi: Suku/Agama + Kata Makian/Hinaan
+      /\b(cina|tionghoa|cokin|sipit|pribumi|papua|jawa|batak|sunda|madura|bugis|dayak|arab|yahudi|islam|kristen|katolik|hindu|budha|buddha|syiah|wahabi|ahmadiyah|kafir)\b[\s,.-]+(bodoh|tolol|goblok|bego|dungu|idiot|anjing|babi|bangsat|keparat|kampung|sesat|miskin|monyet|najis|tai|biadab|laknat|penjajah|hina|musyrik|teroris|kadrun|cebong)\b/i,
+      // Kombinasi kebalikannya: Kata Makian/Hinaan + Suku/Agama
+      /\b(bodoh|tolol|goblok|bego|dungu|idiot|anjing|babi|bangsat|keparat|kampung|sesat|miskin|monyet|najis|tai|biadab|laknat|hina|dasar)\b[\s,.-]+(cina|tionghoa|cokin|sipit|pribumi|papua|jawa|batak|sunda|madura|bugis|dayak|arab|yahudi|islam|kristen|katolik|hindu|budha|buddha|syiah|wahabi|ahmadiyah|kafir)\b/i,
     ],
   },
   KATA_KOTOR: {
     label: 'Kata Kotor & Umpatan Kasar',
-    description: 'Kata-kata umpatan kasar, jorok, atau makian vulgar.',
+    description: 'Kata-kata umpatan kasar, makian, atau bahasa merendahkan.',
     words: [
+      'tolol',
+      'bodoh',
+      'goblok',
+      'bego',
+      'dungu',
+      'idiot',
       'anjing',
       'babi',
       'bangsat',
@@ -173,14 +193,24 @@ const DICTIONARIES: Record<
       'puki',
       'pukimak',
       'bajingan',
+      'kampret',
+      'asu',
       'pantat busuk',
       'lonte',
       'perek',
       'kampang',
       'cukimai',
-      'bego lu',
-      'goblok sia',
-      'tolol amat',
+      'kimak',
+      'tai',
+      'taek',
+      'modar',
+      'mampus',
+      'bangke',
+      'setan alas',
+      'iblis',
+    ],
+    regex: [
+      /\b(tolol|goblok|bego|dungu|idiot|bangsat|keparat|bajingan|jancuk|jancok|pantek|pukimak)\b/i,
     ],
   },
   UJARAN_KEBENCIAN: {
@@ -189,15 +219,18 @@ const DICTIONARIES: Record<
     words: [
       'bunuh dia',
       'mati aja kamu',
+      'mampus lu',
+      'mati aja lu',
       'bantai saja',
       'penggal kepalanya',
       'gantung lehernya',
       'sebar foto bugilnya',
       'bakar rumahnya',
       'habisi keluarganya',
+      'bunuh diri',
     ],
     regex: [
-      /(bunuh|bantai|racun|penggal)\s+(dia|mereka|kamu|orang)/i,
+      /(bunuh|bantai|racun|penggal|habisi)\s+(dia|mereka|kamu|orang|lu|loe)/i,
     ],
   },
   DOXXING: {
@@ -217,11 +250,17 @@ export function inspectContent(title: string, content: string): ModerationResult
   const normalized = normalizeForModeration(combinedRaw);
   const collapsed = getCollapsedText(normalized);
 
-  // Check each category in priority order: JUDOL -> PORNO -> SARA -> UJARAN_KEBENCIAN -> KATA_KOTOR -> DOXXING
+  // Extract individual words for exact token matching
+  const tokens = normalized
+    .replace(/[^\w\s]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean);
+
+  // Priority check order: SARA -> JUDOL -> PORNO -> UJARAN_KEBENCIAN -> KATA_KOTOR -> DOXXING
   const checkOrder: ViolationCategory[] = [
+    'SARA',
     'JUDOL',
     'PORNO',
-    'SARA',
     'UJARAN_KEBENCIAN',
     'KATA_KOTOR',
     'DOXXING',
@@ -231,16 +270,22 @@ export function inspectContent(title: string, content: string): ModerationResult
     const dict = DICTIONARIES[cat];
     const matched: string[] = [];
 
-    // 1. Check exact keywords in normalized text
+    // 1. Check exact keywords against token list and phrases
     for (const word of dict.words) {
-      const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const regex = new RegExp(`\\b${escaped}\\b`, 'i');
-
-      if (regex.test(normalized)) {
-        matched.push(word);
-      } else if (word.length >= 4 && collapsed.includes(word.replace(/\s+/g, ''))) {
-        // Obfuscation check (e.g. "s.l.o.t" or "g a c o r")
-        matched.push(word);
+      const lowerWord = word.toLowerCase();
+      if (lowerWord.includes(' ')) {
+        // Multi-word phrase check
+        if (normalized.includes(lowerWord)) {
+          matched.push(word);
+        }
+      } else {
+        // Single word token check
+        if (tokens.includes(lowerWord)) {
+          matched.push(word);
+        } else if (lowerWord.length >= 4 && collapsed.includes(lowerWord)) {
+          // Obfuscated check (e.g. s.l.o.t or j-u-d-i)
+          matched.push(word);
+        }
       }
     }
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Bookmark, Clock, Lock, ChevronDown, ChevronUp, Music } from 'lucide-react';
+import { ArrowLeft, Bookmark, Clock, Lock, ChevronDown, ChevronUp, Music, Trash2 } from 'lucide-react';
 import { type Story, type Reply, type User as UserType, RASA_DETAILS } from '../types';
 import { audioEngine } from '../utils/audioEngine';
 import { ThreadReplies } from './ThreadReplies';
@@ -12,6 +12,7 @@ interface StoryReaderProps {
   onToggleSave: (storyId: string) => void;
   onAddReply: (storyId: string, parentReplyId: string | null, tier: 1 | 2 | 3, content: string) => void;
   onRequestLogin: () => void;
+  onDeleteStory?: (storyId: string) => void;
 }
 
 export const StoryReader: React.FC<StoryReaderProps> = ({
@@ -22,9 +23,12 @@ export const StoryReader: React.FC<StoryReaderProps> = ({
   onToggleSave,
   onAddReply,
   onRequestLogin,
+  onDeleteStory,
 }) => {
   const [showReplies, setShowReplies] = useState(true);
   const rasaMeta = RASA_DETAILS[story.rasa];
+  const isAuthor = story.authorId === currentUser.id || story.authorPaperName === currentUser.paperName;
+  const canDelete = isAuthor || Boolean(currentUser.isAdmin);
 
   useEffect(() => {
     audioEngine.play(story.rasa);
@@ -45,13 +49,31 @@ export const StoryReader: React.FC<StoryReaderProps> = ({
           <span>Kembali ke Beranda</span>
         </button>
 
-        <button
-          onClick={() => onToggleSave(story.id)}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-[#DCD5C3] bg-white text-xs font-medium text-[#413D38] hover:bg-[#F2ECE0] transition-colors cursor-pointer"
-        >
-          <Bookmark className={`w-3.5 h-3.5 ${story.isSaved ? 'fill-[#172132] text-[#172132]' : ''}`} />
-          <span>{story.isSaved ? 'Tersimpan' : 'Simpan Surat'}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {canDelete && (
+            <button
+              onClick={() => {
+                if (window.confirm(`Yakin ingin menarik surat "${story.title || 'Tanpa Judul'}" ini dari meja dan menghapusnya secara permanen?`)) {
+                  onDeleteStory?.(story.id);
+                  onBack();
+                }
+              }}
+              title={currentUser.isAdmin && !isAuthor ? 'Hapus Cerita (Hak Akses Admin)' : 'Hapus Surat Saya'}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-rose-300 bg-rose-50 text-rose-800 text-xs font-medium hover:bg-rose-100 transition-colors cursor-pointer shadow-2xs"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+              <span>{currentUser.isAdmin && !isAuthor ? 'Hapus (Admin)' : 'Hapus'}</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => onToggleSave(story.id)}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-[#DCD5C3] bg-white text-xs font-medium text-[#413D38] hover:bg-[#F2ECE0] transition-colors cursor-pointer"
+          >
+            <Bookmark className={`w-3.5 h-3.5 ${story.isSaved ? 'fill-[#172132] text-[#172132]' : ''}`} />
+            <span>{story.isSaved ? 'Tersimpan' : 'Simpan Surat'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Main Reading Sheet Card */}

@@ -246,6 +246,13 @@ export function App() {
         currentAmbientRasa={
           selectedStory ? selectedStory.rasa : selectedRasaFilter !== 'ALL' ? selectedRasaFilter : 'GUNJING'
         }
+        onToggleAdmin={() => {
+          const next = !currentUser.isAdmin;
+          setCurrentUser((prev) => ({ ...prev, isAdmin: next }));
+          if (next) {
+            alert('Mode Admin / Kurator Meja Aktif! Anda sekarang dapat menghapus cerita apa pun yang melanggar langsung dari beranda atau layar baca.');
+          }
+        }}
       />
 
       {/* Main Body */}
@@ -263,6 +270,7 @@ export function App() {
             onToggleSave={handleToggleSave}
             onAddReply={handleAddReply}
             onRequestLogin={() => setIsRenameOpen(true)}
+            onDeleteStory={handleDeleteStory}
           />
         ) : currentView === 'WRITE' ? (
           /* VIEW: TULIS AJA */
@@ -330,11 +338,13 @@ export function App() {
                     <StoryCard
                       key={story.id}
                       story={story}
+                      currentUser={currentUser}
                       onSelect={(s) => {
                         setSelectedStory(s);
                         setCurrentView('READER');
                       }}
                       onToggleSave={handleToggleSave}
+                      onDeleteStory={handleDeleteStory}
                     />
                   ))
                 )}
