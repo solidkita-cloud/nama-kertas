@@ -1,5 +1,5 @@
 import React from 'react';
-import { Feather, ArrowRight, PenLine, Volume2, VolumeX, Play, Pause, Sparkles, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { Feather, ArrowRight, PenLine, Volume2, VolumeX, Play, Pause, Sparkles, ShieldAlert, ShieldCheck, Lock } from 'lucide-react';
 import type { User as UserType, Rasa } from '../types';
 import { audioEngine } from '../utils/audioEngine';
 
@@ -133,19 +133,25 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Admin / Kurator Meja Toggle */}
-          <button
-            onClick={onToggleAdmin}
-            title={currentUser.isAdmin ? 'Mode Admin/Kurator Aktif (Klik untuk nonaktifkan)' : 'Klik untuk mengaktifkan wewenang Admin / Kurator'}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer border ${
-              currentUser.isAdmin
-                ? 'bg-[#172132] text-amber-300 border-[#172132] shadow-xs'
-                : 'border-[#E0D9C8] text-[#7A746A] hover:text-[#172132] hover:bg-[#F2ECE0] bg-[#FDFCFA]'
-            }`}
-          >
-            <ShieldCheck className={`w-3.5 h-3.5 ${currentUser.isAdmin ? 'text-amber-400' : 'text-[#7A746A]'}`} />
-            <span>{currentUser.isAdmin ? 'Admin (Aktif)' : 'Admin'}</span>
-          </button>
+          {/* Admin / Kurator Meja (Stealth / Discreet saat belum login) */}
+          {currentUser.isAdmin ? (
+            <button
+              onClick={onToggleAdmin}
+              title="Mode Kurator Meja Aktif (Klik untuk keluar)"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer border bg-[#172132] text-amber-300 border-[#172132] shadow-xs"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+              <span>Kurator (Aktif) • Keluar</span>
+            </button>
+          ) : (
+            <button
+              onClick={onToggleAdmin}
+              title="Akses Kurator (Rahasia)"
+              className="p-1.5 rounded-full text-[#8A847A] hover:text-[#172132] hover:bg-[#F2ECE0] transition-all cursor-pointer opacity-30 hover:opacity-100"
+            >
+              <Lock className="w-3 h-3" />
+            </button>
+          )}
 
           {/* Replay Intro Splash Button */}
           <button

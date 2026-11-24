@@ -68,6 +68,18 @@ export function App() {
         };
   });
 
+  // Shortcut keyboard rahasia untuk buka Kunci Kurator (Ctrl + Shift + A)
+  useEffect(() => {
+    const handleAdminShortcut = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+        e.preventDefault();
+        setIsAdminModalOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleAdminShortcut);
+    return () => window.removeEventListener('keydown', handleAdminShortcut);
+  }, []);
+
   // Modal 18+ baru dibuka setelah welcome splash ("masa welcome yang keren tadi") selesai
   const [isAgeGateOpen, setIsAgeGateOpen] = useState(false);
 
