@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Bookmark, Clock, Lock, ChevronDown, ChevronUp, Music, Trash2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Bookmark, Clock, Lock, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Music, Trash2 } from 'lucide-react';
 import { type Story, type Reply, type User as UserType, RASA_DETAILS } from '../types';
 import { audioEngine } from '../utils/audioEngine';
 import { ThreadReplies } from './ThreadReplies';
@@ -13,6 +13,11 @@ interface StoryReaderProps {
   onAddReply: (storyId: string, parentReplyId: string | null, tier: 1 | 2 | 3, content: string) => void;
   onRequestLogin: () => void;
   onDeleteStory?: (storyId: string) => void;
+  prevStory?: Story | null;
+  nextStory?: Story | null;
+  currentIndex?: number;
+  totalStories?: number;
+  onNavigateStory?: (story: Story) => void;
 }
 
 export const StoryReader: React.FC<StoryReaderProps> = ({
@@ -24,6 +29,11 @@ export const StoryReader: React.FC<StoryReaderProps> = ({
   onAddReply,
   onRequestLogin,
   onDeleteStory,
+  prevStory,
+  nextStory,
+  currentIndex = -1,
+  totalStories = 0,
+  onNavigateStory,
 }) => {
   const [showReplies, setShowReplies] = useState(true);
   const rasaMeta = RASA_DETAILS[story.rasa];
@@ -35,12 +45,32 @@ export const StoryReader: React.FC<StoryReaderProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [story.id, story.rasa]);
 
+  // Keyboard shortcut: Panah Kiri (←) & Panah Kanan (→) untuk ganti surat
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+        return;
+      }
+      if (e.key === 'ArrowLeft' && prevStory) {
+        onNavigateStory?.(prevStory);
+      } else if (e.key === 'ArrowRight' && nextStory) {
+        onNavigateStory?.(nextStory);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [prevStory, nextStory, onNavigateStory]);
+
   const isRestricted = story.visibility === 'MEMBERS_ONLY' && !currentUser.isLoggedIn;
+  const storyIndexBadge =
+    currentIndex >= 0 && totalStories > 0 ? `${currentIndex + 1} dari ${totalStories}` : null;
 
   return (
     <div className="max-w-3xl mx-auto px-5 sm:px-8 py-10 sm:py-16 space-y-8 animate-in fade-in">
       {/* Navigation / Back Bar */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <button
           onClick={onBack}
           className="flex items-center gap-2 px-4 py-2 rounded-full border border-[#DCD5C3] bg-white text-xs font-medium text-[#413D38] hover:bg-[#F2ECE0] transition-colors cursor-pointer"
@@ -48,6 +78,35 @@ export const StoryReader: React.FC<StoryReaderProps> = ({
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Kembali ke Beranda</span>
         </button>
+
+        {/* Quick Prev / Next Switcher in Header */}
+        <div className="flex items-center gap-1.5 text-xs text-[#524E48]">
+          <button
+            disabled={!prevStory}
+            onClick={() => prevStory && onNavigateStory?.(prevStory)}
+            title={prevStory ? `Sebelumnya: ${prevStory.title || 'Tanpa Judul'}` : 'Surat pertama di meja'}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-[#DCD5C3] bg-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#F2ECE0] transition-colors cursor-pointer"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Sebelumnya</span>
+          </button>
+
+          {storyIndexBadge && (
+            <span className="text-[11px] text-[#8A847A] px-2 font-mono">
+              {storyIndexBadge}
+            </span>
+          )}
+
+          <button
+            disabled={!nextStory}
+            onClick={() => nextStory && onNavigateStory?.(nextStory)}
+            title={nextStory ? `Selanjutnya: ${nextStory.title || 'Tanpa Judul'}` : 'Surat terakhir di meja'}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-[#DCD5C3] bg-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#F2ECE0] transition-colors cursor-pointer"
+          >
+            <span className="hidden sm:inline">Selanjutnya</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
 
         <div className="flex items-center gap-2">
           {canDelete && (
@@ -152,6 +211,55 @@ export const StoryReader: React.FC<StoryReaderProps> = ({
           </div>
         </div>
       </article>
+
+      {/* Previous / Next Story Navigation Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {prevStory ? (
+          <button
+            onClick={() => onNavigateStory?.(prevStory)}
+            className="group p-5 rounded-2xl border border-[#E8E2D2] bg-white hover:border-[#172132] hover:shadow-xs transition-all text-left flex flex-col justify-between gap-3 cursor-pointer"
+          >
+            <div className="flex items-center gap-1.5 text-xs text-[#7A746A] group-hover:text-[#172132] transition-colors">
+              <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
+              <span className="font-medium">Surat Sebelumnya</span>
+              <span className="text-[10px] opacity-60">• {RASA_DETAILS[prevStory.rasa].label}</span>
+            </div>
+            <div className="font-serif text-base sm:text-lg font-bold text-[#172132] line-clamp-1">
+              {prevStory.title || 'Tanpa Judul'}
+            </div>
+            <div className="text-xs text-[#8A847A] font-sans">
+              Oleh {prevStory.authorPaperName}
+            </div>
+          </button>
+        ) : (
+          <div className="p-5 rounded-2xl border border-dashed border-[#E0D9C8] text-[#9E978C] text-xs font-serif italic flex items-center justify-center text-center bg-white/40">
+            Ini surat paling pertama di meja
+          </div>
+        )}
+
+        {nextStory ? (
+          <button
+            onClick={() => onNavigateStory?.(nextStory)}
+            className="group p-5 rounded-2xl border border-[#E8E2D2] bg-white hover:border-[#172132] hover:shadow-xs transition-all text-right flex flex-col justify-between gap-3 cursor-pointer"
+          >
+            <div className="flex items-center justify-end gap-1.5 text-xs text-[#7A746A] group-hover:text-[#172132] transition-colors">
+              <span className="text-[10px] opacity-60">{RASA_DETAILS[nextStory.rasa].label} •</span>
+              <span className="font-medium">Surat Selanjutnya</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            </div>
+            <div className="font-serif text-base sm:text-lg font-bold text-[#172132] line-clamp-1">
+              {nextStory.title || 'Tanpa Judul'}
+            </div>
+            <div className="text-xs text-[#8A847A] font-sans">
+              Oleh {nextStory.authorPaperName}
+            </div>
+          </button>
+        ) : (
+          <div className="p-5 rounded-2xl border border-dashed border-[#E0D9C8] text-[#9E978C] text-xs font-serif italic flex items-center justify-center text-center bg-white/40">
+            Kamu sudah membaca sampai surat terakhir di meja
+          </div>
+        )}
+      </div>
 
       {/* 3-Tier Replies Section */}
       <section className="p-8 rounded-3xl border border-[#E8E2D2] bg-white shadow-xs">

@@ -220,6 +220,16 @@ export function App() {
 
   const savedCount = stories.filter((s) => s.isSaved && s.visibility !== 'QUARANTINED').length;
 
+  // Indeks dan navigasi cerita sebelumnya / selanjutnya di atas meja
+  const currentStoryIndex = selectedStory
+    ? filteredStories.findIndex((s) => s.id === selectedStory.id)
+    : -1;
+  const prevStory = currentStoryIndex > 0 ? filteredStories[currentStoryIndex - 1] : null;
+  const nextStory =
+    currentStoryIndex >= 0 && currentStoryIndex < filteredStories.length - 1
+      ? filteredStories[currentStoryIndex + 1]
+      : null;
+
   return (
     <div className="min-h-screen flex flex-col bg-[#F9F6EE] text-[#172132] font-sans antialiased selection:bg-[#E2D8C3]">
       {/* 0. INTRO SPLASH ("sruuttt.... warna cream kertas, tulisan latin sambung Nama Kertas, lalu terbang") */}
@@ -275,6 +285,13 @@ export function App() {
             onAddReply={handleAddReply}
             onRequestLogin={() => setIsRenameOpen(true)}
             onDeleteStory={handleDeleteStory}
+            prevStory={prevStory}
+            nextStory={nextStory}
+            currentIndex={currentStoryIndex}
+            totalStories={filteredStories.length}
+            onNavigateStory={(nextS) => {
+              setSelectedStory(nextS);
+            }}
           />
         ) : currentView === 'WRITE' ? (
           /* VIEW: TULIS AJA */
