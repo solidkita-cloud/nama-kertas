@@ -23,6 +23,7 @@ import { SupportModal } from './components/SupportModal';
 import { AdminLoginModal } from './components/AdminLoginModal';
 import { PaperIntroSplash } from './components/PaperIntroSplash';
 import { audioEngine } from './utils/audioEngine';
+import { inspectContent } from './utils/contentModeration';
 import {
   getStories,
   saveStory as saveStoryToDb,
@@ -30,12 +31,35 @@ import {
   addReply as addReplyToDb,
 } from './services/storyService';
 
+function sanitizeStories(list: Story[]): Story[] {
+  return list.map((story) => {
+    if (story.visibility === 'QUARANTINED') return story;
+    const safety = inspectContent(story.title || '', story.content || '');
+    if (safety.isQuarantined) {
+      return {
+        ...story,
+        visibility: 'QUARANTINED' as StoryVisibility,
+        quarantineDetails: {
+          category: safety.category || 'TERLARANG',
+          categoryLabel: safety.categoryLabel || 'Konten Terlarang',
+          reason: safety.reasonText,
+          matchedWords: safety.matchedKeywords,
+          quarantinedAt: story.createdAt,
+        },
+      };
+    }
+    return story;
+  });
+}
+
 export function App() {
   const [showIntro, setShowIntro] = useState(true);
   const [currentView, setCurrentView] = useState<'FEED' | 'READER' | 'WRITE' | 'QUARANTINE'>('FEED');
   const [selectedStory, setSelectedStory] = useState<Story | null>(null);
   const [selectedRasaFilter, setSelectedRasaFilter] = useState<Rasa | 'ALL'>('ALL');
   const [onlySavedFilter, setOnlySavedFilter] = useState(false);
+  const [onlyDraftsFilter, setOnlyDraftsFilter] = useState(false);
+  const [draftToEdit, setDraftToEdit] = useState<Story | null>(null);
 
   // Modals state
   const [isRenameOpen, setIsRenameOpen] = useState(false);
@@ -45,7 +69,8 @@ export function App() {
   // Stories & Replies state
   const [stories, setStories] = useState<Story[]>(() => {
     const saved = localStorage.getItem('nama_kertas_stories_v2');
-    return saved ? JSON.parse(saved) : INITIAL_STORIES;
+    const parsed: Story[] = saved ? JSON.parse(saved) : INITIAL_STORIES;
+    return sanitizeStories(parsed);
   });
 
   const [replies, setReplies] = useState<Reply[]>(() => {
@@ -89,11 +114,11 @@ export function App() {
     }
   }, [showIntro, currentUser.isAdultVerified]);
 
-  // Load from Firestore on mount
+  // Load from Firestore on mount (with auto-sanitization)
   useEffect(() => {
     getStories().then((fetched) => {
       if (fetched && fetched.length > 0) {
-        setStories(fetched);
+        setStories(sanitizeStories(fetched));
       }
     });
   }, []);
@@ -166,6 +191,7 @@ export function App() {
 
   // Publish Story
   const handlePublishStory = (data: {
+    id?: string;
     title: string;
     content: string;
     rasa: Rasa;
@@ -184,8 +210,10 @@ export function App() {
       TENANG: 'Kertas Pagi',
     };
 
+    const targetId = data.id || `story-${Date.now()}`;
+
     const newStory: Story = {
-      id: `story-${Date.now()}`,
+      id: targetId,
       authorPaperName: currentUser.paperName,
       authorId: currentUser.id,
       title: data.title || 'Tanpa Judul',
@@ -205,15 +233,18 @@ export function App() {
     };
 
     saveStoryToDb(newStory).then((saved) => {
-      setStories((prev) => [saved, ...prev.filter((s) => s.id !== newStory.id)]);
+      setStories((prev) => [saved, ...prev.filter((s) => s.id !== targetId)]);
     });
 
     if (data.visibility === 'QUARANTINED') {
       setCurrentView('QUARANTINE');
     } else if (data.visibility === 'DRAFT') {
       setCurrentView('FEED');
-      alert('Ceritamu berhasil disimpan di draf pribadimu.');
+      setOnlyDraftsFilter(true);
+      setDraftToEdit(null);
+      alert('Draf berhasil disimpan. Kamu bisa melihat dan melanjutkannya di bagian "Draf Saya".');
     } else {
+      setDraftToEdit(null);
       setSelectedStory(newStory);
       setCurrentView('READER');
     }
@@ -222,9 +253,22 @@ export function App() {
   // Quarantined stories count
   const quarantinedStories = stories.filter((s) => s.visibility === 'QUARANTINED');
 
-  // Filtered stories (EXCLUDE QUARANTINED and DRAFT from public feed)
+  // Drafts belonging to current user
+  const myDrafts = stories.filter(
+    (s) => s.visibility === 'DRAFT' && s.authorPaperName === currentUser.paperName
+  );
+
+  // Filtered stories (EXCLUDE QUARANTINED and DRAFT from public feed, Defense-in-Depth against toxic content)
   const filteredStories = stories.filter((story) => {
-    if (story.visibility === 'QUARANTINED' || story.visibility === 'DRAFT') return false;
+    if (story.visibility === 'QUARANTINED') return false;
+    const safety = inspectContent(story.title || '', story.content || '');
+    if (safety.isQuarantined) return false;
+
+    if (onlyDraftsFilter) {
+      return story.visibility === 'DRAFT' && story.authorPaperName === currentUser.paperName;
+    }
+
+    if (story.visibility === 'DRAFT') return false;
     if (onlySavedFilter && !story.isSaved) return false;
     if (selectedRasaFilter !== 'ALL' && story.rasa !== selectedRasaFilter) return false;
     return true;
@@ -255,10 +299,13 @@ export function App() {
         onOpenRename={() => setIsRenameOpen(true)}
         onOpenWrite={() => {
           setSelectedStory(null);
+          setDraftToEdit(null);
           setCurrentView('WRITE');
         }}
         onGoHome={() => {
           setSelectedStory(null);
+          setOnlyDraftsFilter(false);
+          setOnlySavedFilter(false);
           setCurrentView('FEED');
         }}
         onReplayIntro={() => setShowIntro(true)}
@@ -267,6 +314,15 @@ export function App() {
           setCurrentView('QUARANTINE');
         }}
         quarantineCount={quarantinedStories.length}
+        draftCount={myDrafts.length}
+        onOpenDrafts={() => {
+          setSelectedStory(null);
+          setOnlyDraftsFilter(true);
+          setOnlySavedFilter(false);
+          setSelectedRasaFilter('ALL');
+          setCurrentView('FEED');
+          scrollToStories();
+        }}
         currentAmbientRasa={
           selectedStory ? selectedStory.rasa : selectedRasaFilter !== 'ALL' ? selectedRasaFilter : 'GUNJING'
         }
@@ -284,35 +340,58 @@ export function App() {
       {/* Main Body */}
       <main className="flex-1">
         {currentView === 'READER' && selectedStory ? (
-          /* VIEW: SATU CERITA, SATU LAYAR */
-          <StoryReader
-            story={selectedStory}
-            replies={replies.filter((r) => r.storyId === selectedStory.id)}
-            currentUser={currentUser}
-            onBack={() => {
-              setSelectedStory(null);
-              setCurrentView('FEED');
-            }}
-            onToggleSave={handleToggleSave}
-            onAddReply={handleAddReply}
-            onRequestLogin={() => setIsRenameOpen(true)}
-            onDeleteStory={handleDeleteStory}
-            prevStory={prevStory}
-            nextStory={nextStory}
-            currentIndex={currentStoryIndex}
-            totalStories={filteredStories.length}
-            onNavigateStory={(nextS) => {
-              setSelectedStory(nextS);
-            }}
-          />
+          /* VIEW: SATU CERITA, SATU LAYAR (dengan auto-check keamanan konten) */
+          inspectContent(selectedStory.title || '', selectedStory.content || '').isQuarantined && !currentUser.isAdmin ? (
+            <div className="py-20 text-center max-w-md mx-auto space-y-4">
+              <p className="font-serif italic text-sm text-red-700">
+                Surat ini telah dipindahkan ke ruang karantina karena melanggar etika kertas (terdeteksi ujaran terlarang/SARA).
+              </p>
+              <button
+                onClick={() => {
+                  setSelectedStory(null);
+                  setCurrentView('FEED');
+                }}
+                className="px-5 py-2 rounded-full bg-[#172132] text-white text-xs cursor-pointer"
+              >
+                Kembali ke Beranda
+              </button>
+            </div>
+          ) : (
+            <StoryReader
+              story={selectedStory}
+              replies={replies.filter((r) => r.storyId === selectedStory.id)}
+              currentUser={currentUser}
+              onBack={() => {
+                setSelectedStory(null);
+                setCurrentView('FEED');
+              }}
+              onToggleSave={handleToggleSave}
+              onAddReply={handleAddReply}
+              onRequestLogin={() => setIsRenameOpen(true)}
+              onDeleteStory={handleDeleteStory}
+              prevStory={prevStory}
+              nextStory={nextStory}
+              currentIndex={currentStoryIndex}
+              totalStories={filteredStories.length}
+              onNavigateStory={(nextS) => {
+                setSelectedStory(nextS);
+              }}
+            />
+          )
         ) : currentView === 'WRITE' ? (
           /* VIEW: TULIS AJA */
           <WriteEditor
             currentUser={currentUser}
             onPublishStory={handlePublishStory}
-            onBack={() => setCurrentView('FEED')}
+            onBack={() => {
+              setDraftToEdit(null);
+              setCurrentView('FEED');
+            }}
             onOpenSupport={() => setIsSupportOpen(true)}
             onViewQuarantine={() => setCurrentView('QUARANTINE')}
+            draftToEdit={draftToEdit}
+            availableDrafts={myDrafts}
+            onSelectDraft={(d) => setDraftToEdit(d)}
           />
         ) : currentView === 'QUARANTINE' ? (
           /* VIEW: RUANG KARANTINA BERLAPIS (KHUSUS ADMIN) */
@@ -340,7 +419,10 @@ export function App() {
           <>
             {/* 1. Hero Section */}
             <HeroSection
-              onStartWriting={() => setCurrentView('WRITE')}
+              onStartWriting={() => {
+                setDraftToEdit(null);
+                setCurrentView('WRITE');
+              }}
               onScrollToStories={scrollToStories}
             />
 
@@ -351,6 +433,7 @@ export function App() {
                 const nextFilter = selectedRasaFilter === rasa ? 'ALL' : rasa;
                 setSelectedRasaFilter(nextFilter);
                 setOnlySavedFilter(false);
+                setOnlyDraftsFilter(false);
                 if (nextFilter !== 'ALL') {
                   audioEngine.play(nextFilter);
                 }
@@ -365,10 +448,21 @@ export function App() {
                 onSelectFilter={(rasa) => {
                   setSelectedRasaFilter(rasa);
                   setOnlySavedFilter(false);
+                  setOnlyDraftsFilter(false);
                   if (rasa !== 'ALL') audioEngine.play(rasa);
                 }}
-                onOpenSaved={() => setOnlySavedFilter(!onlySavedFilter)}
+                onOpenSaved={() => {
+                  setOnlySavedFilter(!onlySavedFilter);
+                  setOnlyDraftsFilter(false);
+                }}
                 savedCount={savedCount}
+                onlySavedFilter={onlySavedFilter}
+                draftCount={myDrafts.length}
+                onlyDraftsFilter={onlyDraftsFilter}
+                onOpenDrafts={() => {
+                  setOnlyDraftsFilter(!onlyDraftsFilter);
+                  setOnlySavedFilter(false);
+                }}
               />
 
               {onlySavedFilter && (
@@ -381,7 +475,9 @@ export function App() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
                 {filteredStories.length === 0 ? (
                   <div className="col-span-full py-16 text-center italic text-xs text-[#8A847A] border border-dashed border-[#DCD5C3] rounded-2xl p-8 bg-white/40">
-                    Belum ada cerita dengan rasa ini. Kamu bisa menjadi yang pertama menaruh cerita.
+                    {onlyDraftsFilter
+                      ? 'Kamu belum memiliki draf tersimpan.'
+                      : 'Belum ada cerita dengan rasa ini. Kamu bisa menjadi yang pertama menaruh cerita.'}
                   </div>
                 ) : (
                   filteredStories.map((story) => (
@@ -395,6 +491,10 @@ export function App() {
                       }}
                       onToggleSave={handleToggleSave}
                       onDeleteStory={handleDeleteStory}
+                      onEditDraft={(draft) => {
+                        setDraftToEdit(draft);
+                        setCurrentView('WRITE');
+                      }}
                     />
                   ))
                 )}

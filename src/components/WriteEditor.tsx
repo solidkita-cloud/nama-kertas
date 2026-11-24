@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Send, Save, Heart, ShieldAlert, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Send, Save, Heart, ShieldAlert, X, FileEdit } from 'lucide-react';
 import {
+  type Story,
   type Rasa,
   type StoryVisibility,
   type User as UserType,
@@ -12,6 +13,7 @@ import { inspectContent, type ModerationResult } from '../utils/contentModeratio
 interface WriteEditorProps {
   currentUser: UserType;
   onPublishStory: (data: {
+    id?: string;
     title: string;
     content: string;
     rasa: Rasa;
@@ -22,6 +24,9 @@ interface WriteEditorProps {
   onBack: () => void;
   onOpenSupport: () => void;
   onViewQuarantine: () => void;
+  draftToEdit?: Story | null;
+  availableDrafts?: Story[];
+  onSelectDraft?: (draft: Story) => void;
 }
 
 export const WriteEditor: React.FC<WriteEditorProps> = ({
@@ -30,15 +35,31 @@ export const WriteEditor: React.FC<WriteEditorProps> = ({
   onBack,
   onOpenSupport,
   onViewQuarantine,
+  draftToEdit,
+  availableDrafts = [],
+  onSelectDraft,
 }) => {
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [selectedRasa, setSelectedRasa] = useState<Rasa>('GUNJING');
-  const [visibility, setVisibility] = useState<StoryVisibility>('PUBLIC');
-  const [allowReplies, setAllowReplies] = useState(true);
+  const [editingDraftId, setEditingDraftId] = useState<string | undefined>(draftToEdit?.id);
+  const [title, setTitle] = useState(draftToEdit?.title || '');
+  const [content, setContent] = useState(draftToEdit?.content || '');
+  const [selectedRasa, setSelectedRasa] = useState<Rasa>(draftToEdit?.rasa || 'GUNJING');
+  const [visibility, setVisibility] = useState<StoryVisibility>(
+    draftToEdit?.visibility === 'DRAFT' ? 'PUBLIC' : draftToEdit?.visibility || 'PUBLIC'
+  );
+  const [allowReplies, setAllowReplies] = useState(draftToEdit ? draftToEdit.allowReplies : true);
 
   // Quarantine interception modal
   const [quarantineModal, setQuarantineModal] = useState<ModerationResult | null>(null);
+
+  useEffect(() => {
+    if (draftToEdit) {
+      setEditingDraftId(draftToEdit.id);
+      setTitle(draftToEdit.title || '');
+      setContent(draftToEdit.content || '');
+      setSelectedRasa(draftToEdit.rasa || 'GUNJING');
+      setAllowReplies(draftToEdit.allowReplies !== false);
+    }
+  }, [draftToEdit]);
 
   const isCrisisTriggered = () => {
     const lower = (content + ' ' + title).toLowerCase();
@@ -59,13 +80,14 @@ export const WriteEditor: React.FC<WriteEditorProps> = ({
     // LAYERED CONTENT MODERATION CHECK (SARA, Porno, Kata Kotor, Judol, Ujaran Kebencian, Doxxing)
     const modResult = inspectContent(title, content);
 
-    if (modResult.isQuarantined && !isDraft) {
-      // Trigger Quarantine Modal & route to quarantined storage
+    if (modResult.isQuarantined) {
+      // Trigger Quarantine Modal & block publishing or saving toxic content
       setQuarantineModal(modResult);
       return;
     }
 
     onPublishStory({
+      id: editingDraftId,
       title: title.trim(),
       content: content.trim(),
       rasa: selectedRasa,
@@ -78,6 +100,7 @@ export const WriteEditor: React.FC<WriteEditorProps> = ({
     if (!quarantineModal) return;
 
     onPublishStory({
+      id: editingDraftId,
       title: title.trim(),
       content: content.trim(),
       rasa: selectedRasa,
@@ -141,6 +164,52 @@ export const WriteEditor: React.FC<WriteEditorProps> = ({
             Tulis senulisnya aja. Nggak perlu EYD, nggak perlu MD DM. Tulisanmu tidak sedang ujian.
           </p>
         </div>
+
+        {/* Banner Sedang Mengedit Draf */}
+        {editingDraftId && (
+          <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-center justify-between gap-3 animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <FileEdit className="w-4 h-4 text-amber-700 shrink-0" />
+              <span>
+                Sedang mengedit draf: <strong>"{title || 'Tanpa Judul'}"</strong>
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setEditingDraftId(undefined);
+                setTitle('');
+                setContent('');
+              }}
+              className="text-[11px] underline text-amber-900 hover:text-black cursor-pointer shrink-0"
+            >
+              Mulai baru (kosongkan)
+            </button>
+          </div>
+        )}
+
+        {/* Banner Draf Tersimpan Lainnya */}
+        {!editingDraftId && availableDrafts.length > 0 && (
+          <div className="p-4 rounded-2xl bg-[#FFFDF5] border border-amber-200 text-xs text-[#524E48] space-y-2 animate-in fade-in">
+            <div className="flex items-center gap-2 font-semibold text-amber-900">
+              <FileEdit className="w-4 h-4 text-amber-700" />
+              <span>Ada {availableDrafts.length} draf tersimpan. Klik untuk memuat:</span>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap pt-1">
+              {availableDrafts.map((d) => (
+                <button
+                  key={d.id}
+                  type="button"
+                  onClick={() => onSelectDraft?.(d)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-amber-200 text-xs text-[#172132] hover:bg-amber-100 transition-colors cursor-pointer shadow-2xs"
+                >
+                  <span className="font-medium">{d.title || 'Tanpa Judul'}</span>
+                  <span className="text-[10px] text-[#7A746A]">({RASA_DETAILS[d.rasa].label})</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Gentle Crisis Alert */}
         {isCrisisTriggered() && (

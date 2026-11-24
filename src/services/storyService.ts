@@ -2,6 +2,7 @@ import {
   collection,
   getDocs,
   addDoc,
+  setDoc,
   deleteDoc,
   doc,
   query,
@@ -59,7 +60,7 @@ export async function saveStory(story: Story): Promise<Story> {
 
   if (isFirebaseConfigured && db) {
     try {
-      const docRef = await addDoc(collection(db, 'stories'), {
+      const dataToSave = {
         authorPaperName: story.authorPaperName,
         authorId: story.authorId,
         title: story.title,
@@ -73,8 +74,15 @@ export async function saveStory(story: Story): Promise<Story> {
         isSaved: Boolean(story.isSaved),
         quarantineDetails: story.quarantineDetails || null,
         serverCreatedAt: serverTimestamp(),
-      });
-      createdStory.id = docRef.id;
+      };
+
+      if (story.id && !story.id.startsWith('story-temp-') && !story.id.startsWith('story-17')) {
+        await setDoc(doc(db, 'stories', story.id), dataToSave, { merge: true });
+        createdStory.id = story.id;
+      } else {
+        const docRef = await addDoc(collection(db, 'stories'), dataToSave);
+        createdStory.id = docRef.id;
+      }
     } catch (err) {
       console.warn('Firebase save failed, saving locally:', err);
     }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Feather, ArrowRight, PenLine, Volume2, VolumeX, Play, Pause, Sparkles, ShieldAlert, ShieldCheck, Lock } from 'lucide-react';
+import { Feather, ArrowRight, PenLine, Volume2, VolumeX, Play, Pause, Sparkles, ShieldAlert, ShieldCheck, Lock, FileEdit } from 'lucide-react';
 import type { User as UserType, Rasa } from '../types';
 import { audioEngine } from '../utils/audioEngine';
 
@@ -13,6 +13,8 @@ interface HeaderProps {
   quarantineCount: number;
   currentAmbientRasa: Rasa | null;
   onToggleAdmin: () => void;
+  draftCount: number;
+  onOpenDrafts: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -25,6 +27,8 @@ export const Header: React.FC<HeaderProps> = ({
   quarantineCount,
   currentAmbientRasa,
   onToggleAdmin,
+  draftCount,
+  onOpenDrafts,
 }) => {
   const [isPlaying, setIsPlaying] = React.useState(audioEngine.getIsPlaying());
   const [isMuted, setIsMuted] = React.useState(audioEngine.getIsMuted());
@@ -107,6 +111,18 @@ export const Header: React.FC<HeaderProps> = ({
             <ArrowRight className="w-3 h-3" />
             <span>Ganti nama</span>
           </button>
+
+          {/* User Drafts Indicator Pill */}
+          {draftCount > 0 && (
+            <button
+              onClick={onOpenDrafts}
+              title="Buka draf tulisan yang belum kamu tayangkan"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-amber-300 bg-amber-50 text-amber-900 text-xs font-medium hover:bg-amber-100 transition-colors cursor-pointer shadow-2xs"
+            >
+              <FileEdit className="w-3.5 h-3.5 text-amber-700" />
+              <span>Draf ({draftCount})</span>
+            </button>
+          )}
 
           {/* Write Button */}
           <button
