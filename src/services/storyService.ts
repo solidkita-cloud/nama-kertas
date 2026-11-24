@@ -16,6 +16,36 @@ import { INITIAL_STORIES, INITIAL_REPLIES } from '../data/initialStories';
 
 const LOCAL_STORIES_KEY = 'nama_kertas_stories_v2';
 const LOCAL_REPLIES_KEY = 'nama_kertas_replies_v2';
+const LOCAL_DRAFTS_KEY = 'nama_kertas_local_drafts_v1';
+
+// 0. Local Drafts Management (100% di perangkat ini saja, tidak pernah dikirim ke Firestore)
+export function getLocalDrafts(): Story[] {
+  try {
+    const raw = localStorage.getItem(LOCAL_DRAFTS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveLocalDraft(draft: Story): Story {
+  const drafts = getLocalDrafts();
+  const id = draft.id && draft.id.startsWith('draft-') ? draft.id : `draft-${Date.now()}`;
+  const draftToSave: Story = {
+    ...draft,
+    id,
+    visibility: 'DRAFT',
+  };
+  const updated = [draftToSave, ...drafts.filter((d) => d.id !== id)];
+  localStorage.setItem(LOCAL_DRAFTS_KEY, JSON.stringify(updated));
+  return draftToSave;
+}
+
+export function deleteLocalDraft(draftId: string): void {
+  const drafts = getLocalDrafts();
+  const updated = drafts.filter((d) => d.id !== draftId);
+  localStorage.setItem(LOCAL_DRAFTS_KEY, JSON.stringify(updated));
+}
 
 // 1. Fetch Stories (Firestore with Initial Seeding & Offline Fallback)
 export async function getStories(): Promise<Story[]> {
@@ -26,10 +56,12 @@ export async function getStories(): Promise<Story[]> {
       const snapshot = await getDocs(q);
 
       if (!snapshot.empty) {
-        return snapshot.docs.map((docSnap) => ({
-          id: docSnap.id,
-          ...docSnap.data(),
-        })) as Story[];
+        return snapshot.docs
+          .map((docSnap) => ({
+            id: docSnap.id,
+            ...docSnap.data(),
+          }))
+          .filter((s: any) => s.visibility !== 'DRAFT') as Story[];
       } else {
         // First-time seed into Firestore so the database is pre-populated
         for (const story of INITIAL_STORIES) {
@@ -54,8 +86,18 @@ export async function getStories(): Promise<Story[]> {
   return saved ? JSON.parse(saved) : INITIAL_STORIES;
 }
 
-// 2. Save / Publish Story to Firestore
+// 2. Save / Publish Story (Drafts stay 100% local, Published go to Firestore)
 export async function saveStory(story: Story): Promise<Story> {
+  // JIKA DRAF: 100% LOKAL DI PERANGKAT INI SAJA, JANGAN PERNAH SIMPAN KE CLOUD FIRESTORE!
+  if (story.visibility === 'DRAFT') {
+    return saveLocalDraft(story);
+  }
+
+  // JIKA DITERBITKAN: Bersihkan dari draf lokal jika sebelumnya berupa draf
+  if (story.id && story.id.startsWith('draft-')) {
+    deleteLocalDraft(story.id);
+  }
+
   const createdStory = { ...story };
 
   if (isFirebaseConfigured && db) {
@@ -76,7 +118,7 @@ export async function saveStory(story: Story): Promise<Story> {
         serverCreatedAt: serverTimestamp(),
       };
 
-      if (story.id && !story.id.startsWith('story-temp-') && !story.id.startsWith('story-17')) {
+      if (story.id && !story.id.startsWith('story-temp-') && !story.id.startsWith('story-17') && !story.id.startsWith('draft-')) {
         await setDoc(doc(db, 'stories', story.id), dataToSave, { merge: true });
         createdStory.id = story.id;
       } else {
@@ -99,6 +141,11 @@ export async function saveStory(story: Story): Promise<Story> {
 
 // 3. Delete Story
 export async function deleteStory(storyId: string): Promise<void> {
+  if (storyId.startsWith('draft-')) {
+    deleteLocalDraft(storyId);
+    return;
+  }
+
   if (isFirebaseConfigured && db) {
     try {
       await deleteDoc(doc(db, 'stories', storyId));

@@ -29,6 +29,7 @@ import {
   saveStory as saveStoryToDb,
   deleteStory as deleteStoryFromDb,
   addReply as addReplyToDb,
+  getLocalDrafts,
 } from './services/storyService';
 
 function sanitizeStories(list: Story[]): Story[] {
@@ -60,6 +61,7 @@ export function App() {
   const [onlySavedFilter, setOnlySavedFilter] = useState(false);
   const [onlyDraftsFilter, setOnlyDraftsFilter] = useState(false);
   const [draftToEdit, setDraftToEdit] = useState<Story | null>(null);
+  const [localDrafts, setLocalDrafts] = useState<Story[]>(() => getLocalDrafts());
 
   // Modals state
   const [isRenameOpen, setIsRenameOpen] = useState(false);
@@ -158,6 +160,7 @@ export function App() {
   const handleDeleteStory = (storyId: string) => {
     deleteStoryFromDb(storyId);
     setStories((prev) => prev.filter((s) => s.id !== storyId));
+    setLocalDrafts((prev) => prev.filter((d) => d.id !== storyId));
   };
 
   // Add Reply
@@ -210,7 +213,7 @@ export function App() {
       TENANG: 'Kertas Pagi',
     };
 
-    const targetId = data.id || `story-${Date.now()}`;
+    const targetId = data.id || (data.visibility === 'DRAFT' ? `draft-${Date.now()}` : `story-${Date.now()}`);
 
     const newStory: Story = {
       id: targetId,
@@ -233,7 +236,10 @@ export function App() {
     };
 
     saveStoryToDb(newStory).then((saved) => {
-      setStories((prev) => [saved, ...prev.filter((s) => s.id !== targetId)]);
+      setLocalDrafts(getLocalDrafts());
+      if (data.visibility !== 'DRAFT') {
+        setStories((prev) => [saved, ...prev.filter((s) => s.id !== targetId)]);
+      }
     });
 
     if (data.visibility === 'QUARANTINED') {
@@ -242,7 +248,7 @@ export function App() {
       setCurrentView('FEED');
       setOnlyDraftsFilter(true);
       setDraftToEdit(null);
-      alert('Draf berhasil disimpan. Kamu bisa melihat dan melanjutkannya di bagian "Draf Saya".');
+      alert('Draf berhasil disimpan di perangkat ini. Hanya kamu di perangkat ini yang dapat melihat dan melanjutkannya.');
     } else {
       setDraftToEdit(null);
       setSelectedStory(newStory);
@@ -253,26 +259,17 @@ export function App() {
   // Quarantined stories count
   const quarantinedStories = stories.filter((s) => s.visibility === 'QUARANTINED');
 
-  // Drafts belonging to current user
-  const myDrafts = stories.filter(
-    (s) => s.visibility === 'DRAFT' && s.authorPaperName === currentUser.paperName
-  );
-
   // Filtered stories (EXCLUDE QUARANTINED and DRAFT from public feed, Defense-in-Depth against toxic content)
-  const filteredStories = stories.filter((story) => {
-    if (story.visibility === 'QUARANTINED') return false;
-    const safety = inspectContent(story.title || '', story.content || '');
-    if (safety.isQuarantined) return false;
-
-    if (onlyDraftsFilter) {
-      return story.visibility === 'DRAFT' && story.authorPaperName === currentUser.paperName;
-    }
-
-    if (story.visibility === 'DRAFT') return false;
-    if (onlySavedFilter && !story.isSaved) return false;
-    if (selectedRasaFilter !== 'ALL' && story.rasa !== selectedRasaFilter) return false;
-    return true;
-  });
+  const filteredStories = onlyDraftsFilter
+    ? localDrafts
+    : stories.filter((story) => {
+        if (story.visibility === 'QUARANTINED' || story.visibility === 'DRAFT') return false;
+        const safety = inspectContent(story.title || '', story.content || '');
+        if (safety.isQuarantined) return false;
+        if (onlySavedFilter && !story.isSaved) return false;
+        if (selectedRasaFilter !== 'ALL' && story.rasa !== selectedRasaFilter) return false;
+        return true;
+      });
 
   const savedCount = stories.filter((s) => s.isSaved && s.visibility !== 'QUARANTINED').length;
 
@@ -314,7 +311,7 @@ export function App() {
           setCurrentView('QUARANTINE');
         }}
         quarantineCount={quarantinedStories.length}
-        draftCount={myDrafts.length}
+        draftCount={localDrafts.length}
         onOpenDrafts={() => {
           setSelectedStory(null);
           setOnlyDraftsFilter(true);
@@ -390,7 +387,7 @@ export function App() {
             onOpenSupport={() => setIsSupportOpen(true)}
             onViewQuarantine={() => setCurrentView('QUARANTINE')}
             draftToEdit={draftToEdit}
-            availableDrafts={myDrafts}
+            availableDrafts={localDrafts}
             onSelectDraft={(d) => setDraftToEdit(d)}
           />
         ) : currentView === 'QUARANTINE' ? (
@@ -457,7 +454,7 @@ export function App() {
                 }}
                 savedCount={savedCount}
                 onlySavedFilter={onlySavedFilter}
-                draftCount={myDrafts.length}
+                draftCount={localDrafts.length}
                 onlyDraftsFilter={onlyDraftsFilter}
                 onOpenDrafts={() => {
                   setOnlyDraftsFilter(!onlyDraftsFilter);

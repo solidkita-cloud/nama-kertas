@@ -116,11 +116,11 @@ export const Header: React.FC<HeaderProps> = ({
           {draftCount > 0 && (
             <button
               onClick={onOpenDrafts}
-              title="Buka draf tulisan yang belum kamu tayangkan"
+              title="Buka draf tulisan yang tersimpan secara lokal di perangkat ini"
               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-amber-300 bg-amber-50 text-amber-900 text-xs font-medium hover:bg-amber-100 transition-colors cursor-pointer shadow-2xs"
             >
               <FileEdit className="w-3.5 h-3.5 text-amber-700" />
-              <span>Draf ({draftCount})</span>
+              <span>Draf Lokal ({draftCount})</span>
             </button>
           )}
 

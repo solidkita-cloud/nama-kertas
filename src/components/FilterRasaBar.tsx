@@ -44,6 +44,7 @@ export const FilterRasaBar: React.FC<FilterRasaBarProps> = ({
           {draftCount > 0 && (
             <button
               onClick={onOpenDrafts}
+              title="Draf tulisan yang tersimpan secara lokal di perangkat ini"
               className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full border text-xs font-medium transition-all cursor-pointer shadow-2xs ${
                 onlyDraftsFilter
                   ? 'bg-[#172132] text-white border-[#172132]'
@@ -51,7 +52,7 @@ export const FilterRasaBar: React.FC<FilterRasaBarProps> = ({
               }`}
             >
               <FileEdit className="w-3.5 h-3.5 text-amber-700" />
-              <span>Draf Saya ({draftCount})</span>
+              <span>Draf Lokal ({draftCount})</span>
             </button>
           )}
 
@@ -109,7 +110,7 @@ export const FilterRasaBar: React.FC<FilterRasaBarProps> = ({
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-amber-900 font-semibold">
               <span className="w-2 h-2 rounded-full inline-block bg-amber-600" />
-              <span>DRAF PRIBADI MILIKMU (BELUM DITARUH DI MEJA)</span>
+              <span>DRAF LOKAL (HANYA DI PERANGKAT INI)</span>
             </div>
             <button
               onClick={() => onSelectFilter('ALL')}
@@ -120,11 +121,11 @@ export const FilterRasaBar: React.FC<FilterRasaBarProps> = ({
           </div>
 
           <h4 className="font-serif text-xl sm:text-2xl font-bold text-[#172132]">
-            Draf Surat Tersimpan
+            Draf di Perangkat Ini
           </h4>
 
           <p className="text-xs sm:text-sm text-[#524E48] leading-relaxed">
-            Draf ini baru tersimpan di lemari pribadimu dan belum dapat dibaca oleh siapa pun di meja publik. Klik surat untuk melanjutkan menulis dan menerbitkannya.
+            Draf ini 100% tersimpan secara privat di peramban perangkatmu saja dan tidak pernah dikirim ke server. Orang lain tidak bisa melihat atau mengeditnya. Klik tulisan untuk melanjutkan atau menerbitkannya ke meja.
           </p>
         </div>
       ) : onlySavedFilter ? (

@@ -193,7 +193,7 @@ export const WriteEditor: React.FC<WriteEditorProps> = ({
           <div className="p-4 rounded-2xl bg-[#FFFDF5] border border-amber-200 text-xs text-[#524E48] space-y-2 animate-in fade-in">
             <div className="flex items-center gap-2 font-semibold text-amber-900">
               <FileEdit className="w-4 h-4 text-amber-700" />
-              <span>Ada {availableDrafts.length} draf tersimpan. Klik untuk memuat:</span>
+              <span>Ada {availableDrafts.length} draf tersimpan di perangkat ini. Klik untuk melanjutkan:</span>
             </div>
             <div className="flex items-center gap-2 flex-wrap pt-1">
               {availableDrafts.map((d) => (
@@ -353,10 +353,11 @@ export const WriteEditor: React.FC<WriteEditorProps> = ({
             <button
               type="button"
               onClick={(e) => handleSubmit(e, true)}
+              title="Simpan draf secara privat di perangkat ini saja agar bisa dilanjutkan nanti"
               className="flex items-center gap-1.5 px-5 py-2.5 rounded-full border border-[#DCD5C3] bg-white text-xs font-medium text-[#413D38] hover:bg-[#F2ECE0] cursor-pointer"
             >
               <Save className="w-3.5 h-3.5" />
-              <span>Simpan Draf</span>
+              <span>Simpan Draf (Lokal)</span>
             </button>
 
             <button

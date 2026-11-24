@@ -21,8 +21,8 @@ export const StoryCard: React.FC<StoryCardProps> = ({
 }) => {
   const rasaMeta = RASA_DETAILS[story.rasa];
   const isAuthor = story.authorId === currentUser.id || story.authorPaperName === currentUser.paperName;
-  const canDelete = isAuthor || Boolean(currentUser.isAdmin);
   const isDraft = story.visibility === 'DRAFT';
+  const canDelete = isDraft || isAuthor || Boolean(currentUser.isAdmin);
 
   return (
     <article
@@ -43,9 +43,9 @@ export const StoryCard: React.FC<StoryCardProps> = ({
         {/* Top Meta: Rasa Tag & Reading Time */}
         <div className="flex items-center justify-between gap-2 mb-3.5">
           {isDraft ? (
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-200" title="Tersimpan di memori perangkat ini. Orang lain tidak bisa melihat atau mengedit draf ini.">
               <span className="w-2 h-2 rounded-full inline-block bg-amber-600 animate-pulse" />
-              <span>Draf Pribadi</span>
+              <span>Draf Lokal (Hanya di Perangkat Ini)</span>
             </div>
           ) : (
             <div
@@ -102,7 +102,7 @@ export const StoryCard: React.FC<StoryCardProps> = ({
               {isDraft ? 'STATUS' : 'Musik'}
             </div>
             <div className="font-medium text-[#172132]">
-              {isDraft ? 'Belum Terbit' : story.musicTheme}
+              {isDraft ? 'Tersimpan di Perangkat' : story.musicTheme}
             </div>
           </div>
         </div>
