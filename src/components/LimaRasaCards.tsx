@@ -3,7 +3,7 @@ import { ArrowRight } from 'lucide-react';
 import { type Rasa, RASA_DETAILS } from '../types';
 
 interface LimaRasaCardsProps {
-  selectedRasa: Rasa;
+  selectedRasa: Rasa | 'ALL';
   onSelectRasa: (rasa: Rasa) => void;
 }
 

@@ -34,7 +34,7 @@ export function App() {
   const [showIntro, setShowIntro] = useState(true);
   const [currentView, setCurrentView] = useState<'FEED' | 'READER' | 'WRITE' | 'QUARANTINE'>('FEED');
   const [selectedStory, setSelectedStory] = useState<Story | null>(null);
-  const [selectedRasaFilter, setSelectedRasaFilter] = useState<Rasa | 'ALL'>('GUNJING');
+  const [selectedRasaFilter, setSelectedRasaFilter] = useState<Rasa | 'ALL'>('ALL');
   const [onlySavedFilter, setOnlySavedFilter] = useState(false);
 
   // Modals state
@@ -303,11 +303,14 @@ export function App() {
 
             {/* 2. Lima Rasa 5-Card Grid */}
             <LimaRasaCards
-              selectedRasa={selectedRasaFilter !== 'ALL' ? selectedRasaFilter : 'GUNJING'}
+              selectedRasa={selectedRasaFilter}
               onSelectRasa={(rasa) => {
-                setSelectedRasaFilter(rasa);
+                const nextFilter = selectedRasaFilter === rasa ? 'ALL' : rasa;
+                setSelectedRasaFilter(nextFilter);
                 setOnlySavedFilter(false);
-                audioEngine.play(rasa);
+                if (nextFilter !== 'ALL') {
+                  audioEngine.play(nextFilter);
+                }
                 scrollToStories();
               }}
             />

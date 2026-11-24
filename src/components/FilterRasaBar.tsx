@@ -74,7 +74,7 @@ export const FilterRasaBar: React.FC<FilterRasaBarProps> = ({
       </div>
 
       {/* Selected Rasa Banner */}
-      {activeMeta && (
+      {activeMeta ? (
         <div className="p-5 sm:p-6 rounded-2xl border border-[#E8E2D2] bg-white space-y-2 shadow-2xs animate-in fade-in">
           <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-[#7A746A] font-semibold">
             <span
@@ -90,6 +90,21 @@ export const FilterRasaBar: React.FC<FilterRasaBarProps> = ({
 
           <p className="text-xs sm:text-sm text-[#524E48] leading-relaxed">
             {activeMeta.description}
+          </p>
+        </div>
+      ) : (
+        <div className="p-5 sm:p-6 rounded-2xl border border-[#E8E2D2] bg-white space-y-2 shadow-2xs animate-in fade-in">
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-[#7A746A] font-semibold">
+            <span className="w-2 h-2 rounded-full inline-block bg-[#172132]" />
+            <span>SEMUA RASA DI ATAS MEJA</span>
+          </div>
+
+          <h4 className="font-serif text-xl sm:text-2xl font-bold text-[#172132]">
+            Semua Cerita
+          </h4>
+
+          <p className="text-xs sm:text-sm text-[#524E48] leading-relaxed">
+            Membuka seluruh surat yang ditinggalkan penulis tanpa membatasi pada satu perasaan.
           </p>
         </div>
       )}
