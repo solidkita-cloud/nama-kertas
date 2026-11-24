@@ -31,11 +31,15 @@ export const FilterRasaBar: React.FC<FilterRasaBarProps> = ({
       {/* Title & Action Buttons Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
+          <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-[#7A746A] font-sans font-medium mb-1">
+            <span>—</span>
+            <span>KENALI RASAMU</span>
+          </div>
           <h3 className="font-editorial text-2xl sm:text-3xl font-bold text-[#172132]">
-            Filter rasa
+            Cerita di Atas Meja
           </h3>
-          <p className="text-xs text-[#7A746A] mt-0.5">
-            Bukan kategori. Ini perasaan yang sedang ditulis.
+          <p className="text-xs sm:text-sm text-[#524E48] mt-1 max-w-xl leading-relaxed">
+            Masing-masing punya sisinya sendiri. Pilih salah satu rasa untuk menyaring surat dan memutar alunan musiknya, atau baca semuanya tanpa sekat.
           </p>
         </div>
 
@@ -75,13 +79,13 @@ export const FilterRasaBar: React.FC<FilterRasaBarProps> = ({
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
         <button
           onClick={() => onSelectFilter('ALL')}
-          className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
+          className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer shrink-0 ${
             selectedRasa === 'ALL' && !onlySavedFilter && !onlyDraftsFilter
               ? 'bg-[#172132] text-white shadow-xs'
               : 'bg-white border border-[#E0D9C8] text-[#524E48] hover:bg-[#F2ECE0]'
           }`}
         >
-          Semua
+          Semua Rasa
         </button>
 
         {rasaList.map((key) => {
@@ -92,13 +96,17 @@ export const FilterRasaBar: React.FC<FilterRasaBarProps> = ({
             <button
               key={key}
               onClick={() => onSelectFilter(key)}
-              className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer shrink-0 ${
                 isSelected
                   ? 'bg-[#172132] text-white shadow-xs'
                   : 'bg-white border border-[#E0D9C8] text-[#524E48] hover:bg-[#F2ECE0]'
               }`}
             >
-              {meta.label}
+              <span
+                className="w-2 h-2 rounded-full inline-block shrink-0"
+                style={{ backgroundColor: meta.dotColor }}
+              />
+              <span>{meta.label}</span>
             </button>
           );
         })}
@@ -152,39 +160,34 @@ export const FilterRasaBar: React.FC<FilterRasaBarProps> = ({
           </p>
         </div>
       ) : activeMeta ? (
-        <div className="p-5 sm:p-6 rounded-2xl border border-[#E8E2D2] bg-white space-y-2 shadow-2xs animate-in fade-in">
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-[#7A746A] font-semibold">
-            <span
-              className="w-2 h-2 rounded-full inline-block"
-              style={{ backgroundColor: activeMeta.dotColor }}
-            />
-            <span>KAMU SEDANG MEMBACA RASA</span>
+        <div className="p-4 sm:p-5 rounded-2xl border border-[#E8E2D2] bg-white/95 space-y-2 shadow-2xs animate-in fade-in">
+          <div className="flex items-center justify-between flex-wrap gap-2 text-xs pb-1 border-b border-[#F5F0E6]">
+            <div className="flex items-center gap-2 text-[11px] uppercase tracking-widest text-[#7A746A] font-semibold">
+              <span
+                className="w-2.5 h-2.5 rounded-full inline-block"
+                style={{ backgroundColor: activeMeta.dotColor }}
+              />
+              <span className="text-[#172132] font-bold">{activeMeta.cardTitle}</span>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] text-[#7A746A] italic">
+                ♫ Ambien: {activeMeta.ambientName}
+              </span>
+              <button
+                onClick={() => onSelectFilter('ALL')}
+                className="text-[11px] text-[#7A746A] hover:text-[#172132] underline cursor-pointer"
+              >
+                Lihat Semua
+              </button>
+            </div>
           </div>
 
-          <h4 className="font-serif text-xl sm:text-2xl font-bold text-[#172132]">
-            {activeMeta.label}
-          </h4>
-
-          <p className="text-xs sm:text-sm text-[#524E48] leading-relaxed">
-            {activeMeta.description}
+          <p className="text-xs sm:text-sm text-[#524E48] leading-relaxed font-serif italic pt-1">
+            "{activeMeta.description}"
           </p>
         </div>
-      ) : (
-        <div className="p-5 sm:p-6 rounded-2xl border border-[#E8E2D2] bg-white space-y-2 shadow-2xs animate-in fade-in">
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-[#7A746A] font-semibold">
-            <span className="w-2 h-2 rounded-full inline-block bg-[#172132]" />
-            <span>SEMUA RASA DI ATAS MEJA</span>
-          </div>
-
-          <h4 className="font-serif text-xl sm:text-2xl font-bold text-[#172132]">
-            Semua Cerita
-          </h4>
-
-          <p className="text-xs sm:text-sm text-[#524E48] leading-relaxed">
-            Membuka seluruh surat yang ditinggalkan penulis tanpa membatasi pada satu perasaan.
-          </p>
-        </div>
-      )}
+      ) : null}
     </div>
   );
 };

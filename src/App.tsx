@@ -10,7 +10,6 @@ import {
 import { INITIAL_STORIES, INITIAL_REPLIES } from './data/initialStories';
 import { Header } from './components/Header';
 import { HeroSection } from './components/HeroSection';
-import { LimaRasaCards } from './components/LimaRasaCards';
 import { FilterRasaBar } from './components/FilterRasaBar';
 import { StoryCard } from './components/StoryCard';
 import { StoryReader } from './components/StoryReader';
@@ -423,22 +422,7 @@ export function App() {
               onScrollToStories={scrollToStories}
             />
 
-            {/* 2. Lima Rasa 5-Card Grid */}
-            <LimaRasaCards
-              selectedRasa={selectedRasaFilter}
-              onSelectRasa={(rasa) => {
-                const nextFilter = selectedRasaFilter === rasa ? 'ALL' : rasa;
-                setSelectedRasaFilter(nextFilter);
-                setOnlySavedFilter(false);
-                setOnlyDraftsFilter(false);
-                if (nextFilter !== 'ALL') {
-                  audioEngine.play(nextFilter);
-                }
-                scrollToStories();
-              }}
-            />
-
-            {/* 3. Filter Rasa & Stories List */}
+            {/* 2. Filter Rasa & Stories List (Kenali Rasamu menyatu langsung di sini) */}
             <section ref={storiesSectionRef} className="py-12 max-w-6xl mx-auto px-5 sm:px-8 space-y-8">
               <FilterRasaBar
                 selectedRasa={selectedRasaFilter}
