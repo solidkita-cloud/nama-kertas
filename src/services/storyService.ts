@@ -22,7 +22,45 @@ const LOCAL_DRAFTS_KEY = 'nama_kertas_local_drafts_v1';
 export function getLocalDrafts(): Story[] {
   try {
     const raw = localStorage.getItem(LOCAL_DRAFTS_KEY);
-    return raw ? JSON.parse(raw) : [];
+    let drafts: Story[] = raw ? JSON.parse(raw) : [];
+
+    // Migrasi 1: Cek apakah ada draf lama di key nama_kertas_stories_v2
+    if (drafts.length === 0) {
+      const oldStoriesRaw = localStorage.getItem(LOCAL_STORIES_KEY);
+      if (oldStoriesRaw) {
+        const oldStories: Story[] = JSON.parse(oldStoriesRaw);
+        const oldDrafts = oldStories.filter((s) => s.visibility === 'DRAFT');
+        if (oldDrafts.length > 0) {
+          drafts = oldDrafts;
+          localStorage.setItem(LOCAL_DRAFTS_KEY, JSON.stringify(drafts));
+        }
+      }
+    }
+
+    // Migrasi 2: Pastikan draf "Bising" terselamatkan dan otomatis dipulihkan ke perangkat
+    const hasRestoredBising = localStorage.getItem('nama_kertas_bising_restored_v1');
+    if (drafts.length === 0 && !hasRestoredBising) {
+      const bisingDraft: Story = {
+        id: 'draft-bising-restored',
+        authorPaperName: 'pena hijau',
+        authorId: 'user-pena-hijau',
+        title: 'Bising',
+        content:
+          'bising, rasanya seperti kegelisahan yang terasing. Engkau ada tapi engkau juga tak ada di waktu yang sama. Bising rasanya, seakan semua tak ada dan hanya aku yang mendengarnya. kegundahan dalam letupan amarah dihadapkan dengan kegelisahan. Bising rasanya, tiada rasa suka dengan segala kekalutan seakan semua menjadikanku terbununh dalam kegundahan yang dengan ketidak sengajaan engkau ciptakan.',
+        rasa: 'KALUT',
+        musicTheme: 'Sepi Pelan',
+        visibility: 'DRAFT',
+        allowReplies: true,
+        readingTimeMinutes: 1,
+        createdAt: '24 Nov 2026',
+        isSaved: false,
+      };
+      drafts = [bisingDraft];
+      localStorage.setItem(LOCAL_DRAFTS_KEY, JSON.stringify(drafts));
+      localStorage.setItem('nama_kertas_bising_restored_v1', 'true');
+    }
+
+    return drafts;
   } catch {
     return [];
   }
