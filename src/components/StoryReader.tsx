@@ -84,11 +84,11 @@ export const StoryReader: React.FC<StoryReaderProps> = ({
           <button
             disabled={!prevStory}
             onClick={() => prevStory && onNavigateStory?.(prevStory)}
-            title={prevStory ? `Sebelumnya: ${prevStory.title || 'Tanpa Judul'}` : 'Surat pertama di meja'}
+            title={prevStory ? `Goresan Baru: ${prevStory.title || 'Tanpa Judul'}` : 'Goresan paling baru di meja'}
             className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-[#DCD5C3] bg-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#F2ECE0] transition-colors cursor-pointer"
           >
             <ChevronLeft className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Sebelumnya</span>
+            <span className="hidden sm:inline font-serif">Goresan Baru</span>
           </button>
 
           {storyIndexBadge && (
@@ -100,10 +100,10 @@ export const StoryReader: React.FC<StoryReaderProps> = ({
           <button
             disabled={!nextStory}
             onClick={() => nextStory && onNavigateStory?.(nextStory)}
-            title={nextStory ? `Selanjutnya: ${nextStory.title || 'Tanpa Judul'}` : 'Surat terakhir di meja'}
+            title={nextStory ? `Goresan Lama: ${nextStory.title || 'Tanpa Judul'}` : 'Goresan paling awal di meja'}
             className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-[#DCD5C3] bg-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#F2ECE0] transition-colors cursor-pointer"
           >
-            <span className="hidden sm:inline">Selanjutnya</span>
+            <span className="hidden sm:inline font-serif">Goresan Lama</span>
             <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -221,10 +221,10 @@ export const StoryReader: React.FC<StoryReaderProps> = ({
           >
             <div className="flex items-center gap-1.5 text-xs text-[#7A746A] group-hover:text-[#172132] transition-colors">
               <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
-              <span className="font-medium">Surat Sebelumnya</span>
+              <span className="font-serif font-bold text-sm tracking-tight text-[#172132]">Goresan Baru</span>
               <span className="text-[10px] opacity-60">• {RASA_DETAILS[prevStory.rasa].label}</span>
             </div>
-            <div className="font-serif text-base sm:text-lg font-bold text-[#172132] line-clamp-1">
+            <div className="font-editorial text-base sm:text-lg font-bold text-[#172132] line-clamp-1">
               {prevStory.title || 'Tanpa Judul'}
             </div>
             <div className="text-xs text-[#8A847A] font-sans">
@@ -233,7 +233,7 @@ export const StoryReader: React.FC<StoryReaderProps> = ({
           </button>
         ) : (
           <div className="p-5 rounded-2xl border border-dashed border-[#E0D9C8] text-[#9E978C] text-xs font-serif italic flex items-center justify-center text-center bg-white/40">
-            Ini surat paling pertama di meja
+            Ini goresan paling baru di atas meja
           </div>
         )}
 
@@ -244,10 +244,10 @@ export const StoryReader: React.FC<StoryReaderProps> = ({
           >
             <div className="flex items-center justify-end gap-1.5 text-xs text-[#7A746A] group-hover:text-[#172132] transition-colors">
               <span className="text-[10px] opacity-60">{RASA_DETAILS[nextStory.rasa].label} •</span>
-              <span className="font-medium">Surat Selanjutnya</span>
+              <span className="font-serif font-bold text-sm tracking-tight text-[#172132]">Goresan Lama</span>
               <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
             </div>
-            <div className="font-serif text-base sm:text-lg font-bold text-[#172132] line-clamp-1">
+            <div className="font-editorial text-base sm:text-lg font-bold text-[#172132] line-clamp-1">
               {nextStory.title || 'Tanpa Judul'}
             </div>
             <div className="text-xs text-[#8A847A] font-sans">
@@ -256,7 +256,7 @@ export const StoryReader: React.FC<StoryReaderProps> = ({
           </button>
         ) : (
           <div className="p-5 rounded-2xl border border-dashed border-[#E0D9C8] text-[#9E978C] text-xs font-serif italic flex items-center justify-center text-center bg-white/40">
-            Kamu sudah membaca sampai surat terakhir di meja
+            Sudah membaca sampai goresan paling awal di meja
           </div>
         )}
       </div>
