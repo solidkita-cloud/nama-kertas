@@ -303,12 +303,26 @@ export function App() {
             onViewQuarantine={() => setCurrentView('QUARANTINE')}
           />
         ) : currentView === 'QUARANTINE' ? (
-          /* VIEW: RUANG KARANTINA BERLAPIS */
-          <QuarantineView
-            quarantinedStories={quarantinedStories}
-            onBack={() => setCurrentView('FEED')}
-            onDeleteStory={handleDeleteStory}
-          />
+          /* VIEW: RUANG KARANTINA BERLAPIS (KHUSUS ADMIN) */
+          currentUser.isAdmin ? (
+            <QuarantineView
+              quarantinedStories={quarantinedStories}
+              onBack={() => setCurrentView('FEED')}
+              onDeleteStory={handleDeleteStory}
+            />
+          ) : (
+            <div className="py-20 text-center max-w-md mx-auto space-y-4">
+              <p className="font-serif italic text-sm text-[#7A746A]">
+                Ruang Karantina hanya dapat diakses oleh Kurator / Admin resmi.
+              </p>
+              <button
+                onClick={() => setCurrentView('FEED')}
+                className="px-5 py-2 rounded-full bg-[#172132] text-white text-xs cursor-pointer"
+              >
+                Kembali ke Beranda
+              </button>
+            </div>
+          )
         ) : (
           /* VIEW: FEED (EXACTLY MATCHING THE USER'S SCREENSHOTS) */
           <>

@@ -117,19 +117,21 @@ export const Header: React.FC<HeaderProps> = ({
             <span>Tulis</span>
           </button>
 
-          {/* Quarantine Button */}
-          <button
-            onClick={onOpenQuarantine}
-            title="Ruang Karantina Konten (SARA, Porno, Judol, Kata Kotor, Ujaran Kebencian)"
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer border ${
-              quarantineCount > 0
-                ? 'bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100'
-                : 'border-[#E0D9C8] text-[#7A746A] hover:bg-[#F2ECE0] bg-[#FDFCFA]'
-            }`}
-          >
-            <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
-            <span>Karantina{quarantineCount > 0 ? ` (${quarantineCount})` : ''}</span>
-          </button>
+          {/* Quarantine Button - HANYA MUNCUL UNTUK ADMIN */}
+          {currentUser.isAdmin && (
+            <button
+              onClick={onOpenQuarantine}
+              title="Ruang Karantina Konten (Khusus Admin/Kurator)"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer border ${
+                quarantineCount > 0
+                  ? 'bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100'
+                  : 'border-[#E0D9C8] text-[#7A746A] hover:bg-[#F2ECE0] bg-[#FDFCFA]'
+              }`}
+            >
+              <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
+              <span>Karantina{quarantineCount > 0 ? ` (${quarantineCount})` : ''}</span>
+            </button>
+          )}
 
           {/* Admin / Kurator Meja Toggle */}
           <button

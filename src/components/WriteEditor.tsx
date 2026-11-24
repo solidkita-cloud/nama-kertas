@@ -116,13 +116,15 @@ export const WriteEditor: React.FC<WriteEditorProps> = ({
           <span>Kembali ke Beranda</span>
         </button>
 
-        <button
-          onClick={onViewQuarantine}
-          className="flex items-center gap-1.5 text-xs text-[#7A746A] hover:text-[#172132] transition-colors cursor-pointer"
-        >
-          <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
-          <span>Lihat Karantina</span>
-        </button>
+        {currentUser.isAdmin && (
+          <button
+            onClick={onViewQuarantine}
+            className="flex items-center gap-1.5 text-xs text-[#7A746A] hover:text-[#172132] transition-colors cursor-pointer"
+          >
+            <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
+            <span>Lihat Karantina (Admin)</span>
+          </button>
+        )}
       </div>
 
       {/* Editor Sheet */}
@@ -340,17 +342,20 @@ export const WriteEditor: React.FC<WriteEditorProps> = ({
 
             <div className="flex flex-col gap-2 pt-2">
               <button
-                onClick={handleConfirmQuarantine}
-                className="w-full py-2.5 rounded-full bg-red-700 hover:bg-red-800 text-white text-xs font-semibold cursor-pointer transition-colors"
-              >
-                Tampung ke Ruang Karantina Pribadi
-              </button>
-              <button
                 onClick={() => setQuarantineModal(null)}
-                className="w-full py-2.5 rounded-full border border-[#DCD5C3] text-xs font-medium text-[#413D38] hover:bg-[#F2ECE0] cursor-pointer"
+                className="w-full py-2.5 rounded-full bg-black hover:bg-neutral-800 text-white text-xs font-semibold cursor-pointer transition-colors shadow-xs"
               >
                 Kembali & Perbaiki Tulisan
               </button>
+
+              {currentUser.isAdmin && (
+                <button
+                  onClick={handleConfirmQuarantine}
+                  className="w-full py-2 px-3 text-[11px] text-red-700 hover:underline cursor-pointer text-center"
+                >
+                  [Khusus Admin] Masukkan ke Arsip Karantina
+                </button>
+              )}
             </div>
           </div>
         </div>
