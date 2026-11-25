@@ -8,6 +8,7 @@ interface StoryReaderProps {
   story: Story;
   replies: Reply[];
   currentUser: UserType;
+  myPublishedStoryIds?: string[];
   onBack: () => void;
   onToggleSave: (storyId: string) => void;
   onAddReply: (storyId: string, parentReplyId: string | null, tier: 1 | 2 | 3, content: string) => void;
@@ -24,6 +25,7 @@ export const StoryReader: React.FC<StoryReaderProps> = ({
   story,
   replies,
   currentUser,
+  myPublishedStoryIds = [],
   onBack,
   onToggleSave,
   onAddReply,
@@ -37,7 +39,11 @@ export const StoryReader: React.FC<StoryReaderProps> = ({
 }) => {
   const [showReplies, setShowReplies] = useState(true);
   const rasaMeta = RASA_DETAILS[story.rasa];
-  const isAuthor = story.authorId === currentUser.id || story.authorPaperName === currentUser.paperName;
+  // Penulis asli: hanya jika ID cerita tercatat di perangkat ini ATAU (ID unik user dan nama kertas cocok secara bersamaan)
+  const isAuthor = Boolean(
+    myPublishedStoryIds.includes(story.id) ||
+    (story.authorId && story.authorId === currentUser.id && story.authorPaperName === currentUser.paperName)
+  );
   const canDelete = isAuthor || Boolean(currentUser.isAdmin);
 
   useEffect(() => {

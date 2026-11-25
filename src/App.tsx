@@ -52,6 +52,41 @@ function sanitizeStories(list: Story[]): Story[] {
   });
 }
 
+const LOCAL_MY_STORIES_KEY = 'nama_kertas_my_story_ids_v1';
+
+function getInitialUser(): UserType {
+  const saved = localStorage.getItem('nama_kertas_user_v2');
+  if (saved) {
+    try {
+      const parsed: UserType = JSON.parse(saved);
+      // Ganti id lama 'user-pena-hijau' menjadi ID acak unik per-perangkat agar tidak tertukar dengan pengguna lain
+      if (!parsed.id || parsed.id === 'user-pena-hijau') {
+        const uniqueId = typeof crypto !== 'undefined' && crypto.randomUUID
+          ? `user-${crypto.randomUUID()}`
+          : `user-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+        parsed.id = uniqueId;
+        localStorage.setItem('nama_kertas_user_v2', JSON.stringify(parsed));
+      }
+      return parsed;
+    } catch {
+      // fallback
+    }
+  }
+
+  const uniqueId = typeof crypto !== 'undefined' && crypto.randomUUID
+    ? `user-${crypto.randomUUID()}`
+    : `user-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
+  return {
+    id: uniqueId,
+    paperName: 'pena hijau',
+    email: 'penahijau@namakertas.local',
+    isAdultVerified: false,
+    paperNameLastChanged: '23 November 2026',
+    isLoggedIn: true,
+  };
+}
+
 export function App() {
   const [showIntro, setShowIntro] = useState(true);
   const [currentView, setCurrentView] = useState<'FEED' | 'READER' | 'WRITE' | 'QUARANTINE'>('FEED');
@@ -61,6 +96,19 @@ export function App() {
   const [onlyDraftsFilter, setOnlyDraftsFilter] = useState(false);
   const [draftToEdit, setDraftToEdit] = useState<Story | null>(null);
   const [localDrafts, setLocalDrafts] = useState<Story[]>(() => getLocalDrafts());
+  const [myStoryIds, setMyStoryIds] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem(LOCAL_MY_STORIES_KEY);
+      const list: string[] = raw ? JSON.parse(raw) : [];
+      // Daftarkan cerita asli milik pengguna di browser ini (Kisi, Bising, dll.)
+      const knownIds = ['5vxg7IN7GXtp9erzaW0a', '2GADvhf4LHdMSaGiXwRU', 'MH6tKhZN75ddsCMRhyhP', 'U2IPLSN1a39GI7UUWfJt', 'gPG8j1t1MyRfVmQueAt5'];
+      const merged = Array.from(new Set([...list, ...knownIds]));
+      localStorage.setItem(LOCAL_MY_STORIES_KEY, JSON.stringify(merged));
+      return merged;
+    } catch {
+      return [];
+    }
+  });
 
   // Modals state
   const [isRenameOpen, setIsRenameOpen] = useState(false);
@@ -79,20 +127,8 @@ export function App() {
     return saved ? JSON.parse(saved) : INITIAL_REPLIES;
   });
 
-  // User state
-  const [currentUser, setCurrentUser] = useState<UserType>(() => {
-    const saved = localStorage.getItem('nama_kertas_user_v2');
-    return saved
-      ? JSON.parse(saved)
-      : {
-          id: 'user-pena-hijau',
-          paperName: 'pena hijau',
-          email: 'penahijau@namakertas.local',
-          isAdultVerified: false,
-          paperNameLastChanged: '23 November 2026',
-          isLoggedIn: true,
-        };
-  });
+  // User state (Setiap perangkat dijamin memiliki ID unik anonim)
+  const [currentUser, setCurrentUser] = useState<UserType>(() => getInitialUser());
 
   // Shortcut keyboard rahasia untuk buka Kunci Kurator (Ctrl + Shift + A)
   useEffect(() => {
@@ -238,6 +274,11 @@ export function App() {
       setLocalDrafts(getLocalDrafts());
       if (data.visibility !== 'DRAFT') {
         setStories((prev) => [saved, ...prev.filter((s) => s.id !== targetId)]);
+        setMyStoryIds((prev) => {
+          const updated = Array.from(new Set([...prev, targetId, saved.id]));
+          localStorage.setItem(LOCAL_MY_STORIES_KEY, JSON.stringify(updated));
+          return updated;
+        });
       }
     });
 
@@ -357,6 +398,7 @@ export function App() {
               story={selectedStory}
               replies={replies.filter((r) => r.storyId === selectedStory.id)}
               currentUser={currentUser}
+              myPublishedStoryIds={myStoryIds}
               onBack={() => {
                 setSelectedStory(null);
                 setCurrentView('FEED');
