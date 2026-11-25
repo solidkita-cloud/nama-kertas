@@ -13,16 +13,14 @@ interface StoryCardProps {
 
 export const StoryCard: React.FC<StoryCardProps> = ({
   story,
-  currentUser,
+  currentUser: _currentUser,
   onSelect,
   onToggleSave,
   onDeleteStory,
   onEditDraft,
 }) => {
   const rasaMeta = RASA_DETAILS[story.rasa];
-  const isAuthor = story.authorId === currentUser.id || story.authorPaperName === currentUser.paperName;
   const isDraft = story.visibility === 'DRAFT';
-  const canDelete = isDraft || isAuthor || Boolean(currentUser.isAdmin);
 
   return (
     <article
@@ -127,22 +125,20 @@ export const StoryCard: React.FC<StoryCardProps> = ({
             </span>
           )}
 
-          {canDelete && (
+          {/* Tombol Hapus HANYA untuk Draf Lokal. Surat publik di meja hanya bisa dihapus oleh pemiliknya dari DALAM lembar bacaan */}
+          {isDraft && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                const confirmText = isDraft
-                  ? `Hapus draf "${story.title || 'Tanpa Judul'}" ini secara permanen?`
-                  : `Yakin ingin menarik surat "${story.title || 'Tanpa Judul'}" ini dari meja dan menghapusnya?`;
-                if (window.confirm(confirmText)) {
+                if (window.confirm(`Hapus draf "${story.title || 'Tanpa Judul'}" ini dari memori perangkat?`)) {
                   onDeleteStory?.(story.id, e);
                 }
               }}
-              title={isDraft ? 'Hapus Draf' : currentUser.isAdmin && !isAuthor ? 'Hapus Cerita (Hak Akses Admin)' : 'Hapus Surat Saya'}
+              title="Hapus draf dari perangkat"
               className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer"
             >
               <Trash2 className="w-3 h-3 text-rose-600" />
-              <span>{isDraft ? 'Hapus Draf' : currentUser.isAdmin && !isAuthor ? 'Hapus (Admin)' : 'Hapus'}</span>
+              <span>Hapus Draf</span>
             </button>
           )}
         </div>
