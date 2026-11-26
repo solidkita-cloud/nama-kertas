@@ -38,9 +38,20 @@ export function normalizeForModeration(input: string): string {
   return text;
 }
 
-// Collapsed words (for bypassing separators: "s.l.o.t" -> "slot")
-function getCollapsedText(text: string): string {
-  return text.replace(/[^a-z0-9]/g, '');
+// Cache untuk regex kata yang disamarkan (obfuscated) dengan batas kata (\b)
+const obfuscatedRegexCache = new Map<string, RegExp>();
+
+function getObfuscatedRegex(word: string): RegExp {
+  const cached = obfuscatedRegexCache.get(word);
+  if (cached) return cached;
+  const escapedChars = word
+    .split('')
+    .map((c) => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  // Mendeteksi kata yang dieja dengan pemisah antarkarakter (misal: "b.a.b.i", "s l o t", "j-u-d-i")
+  // Menggunakan word boundary (\b) ketat agar tidak menimbulkan Scunthorpe Problem (misal: "tiba bisa" yang mengandung "ba"+"bi")
+  const rx = new RegExp(`\\b${escapedChars.join('[\\s._\\-*#~^/]+')}\\b`, 'i');
+  obfuscatedRegexCache.set(word, rx);
+  return rx;
 }
 
 // Layer 2: Filter Dictionaries
@@ -248,7 +259,6 @@ const DICTIONARIES: Record<
 export function inspectContent(title: string, content: string): ModerationResult {
   const combinedRaw = `${title} ${content}`;
   const normalized = normalizeForModeration(combinedRaw);
-  const collapsed = getCollapsedText(normalized);
 
   // Extract individual words for exact token matching
   const tokens = normalized
@@ -282,9 +292,11 @@ export function inspectContent(title: string, content: string): ModerationResult
         // Single word token check
         if (tokens.includes(lowerWord)) {
           matched.push(word);
-        } else if (lowerWord.length >= 4 && collapsed.includes(lowerWord)) {
-          // Obfuscated check (e.g. s.l.o.t or j-u-d-i)
-          matched.push(word);
+        } else if (lowerWord.length >= 4) {
+          // Obfuscated check (e.g. s.l.o.t, b.a.b.i, j u d i) dengan word boundary ketat
+          if (getObfuscatedRegex(lowerWord).test(normalized)) {
+            matched.push(word);
+          }
         }
       }
     }
