@@ -94,17 +94,29 @@ export async function getStories(): Promise<Story[]> {
       const snapshot = await getDocs(q);
 
       if (!snapshot.empty) {
-        return snapshot.docs
+        const rawList = snapshot.docs
           .map((docSnap) => ({
             id: docSnap.id,
             ...docSnap.data(),
           }))
           .filter((s: any) => s.visibility !== 'DRAFT') as Story[];
+
+        // Anti-Duplikasi: pastikan tidak ada cerita yang muncul ganda (berdasarkan judul + nama kertas)
+        const seen = new Set<string>();
+        const uniqueList: Story[] = [];
+        for (const story of rawList) {
+          const key = `${(story.title || '').trim().toLowerCase()}___${(story.authorPaperName || '').trim().toLowerCase()}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            uniqueList.push(story);
+          }
+        }
+        return uniqueList;
       } else {
-        // First-time seed into Firestore so the database is pre-populated
+        // First-time seed into Firestore menggunakan ID deterministik (setDoc) agar tidak pernah menduplikasi
         for (const story of INITIAL_STORIES) {
           try {
-            await addDoc(colRef, {
+            await setDoc(doc(db, 'stories', story.id), {
               ...story,
               serverCreatedAt: serverTimestamp(),
             });
@@ -119,9 +131,23 @@ export async function getStories(): Promise<Story[]> {
     }
   }
 
-  // Fallback to localStorage
+  // Fallback to localStorage dengan deduplikasi
   const saved = localStorage.getItem(LOCAL_STORIES_KEY);
-  return saved ? JSON.parse(saved) : INITIAL_STORIES;
+  if (saved) {
+    try {
+      const parsed: Story[] = JSON.parse(saved);
+      const seen = new Set<string>();
+      return parsed.filter((story) => {
+        const key = `${(story.title || '').trim().toLowerCase()}___${(story.authorPaperName || '').trim().toLowerCase()}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    } catch {
+      // fallback
+    }
+  }
+  return INITIAL_STORIES;
 }
 
 // 2. Save / Publish Story (Drafts stay 100% local, Published go to Firestore)

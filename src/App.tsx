@@ -32,7 +32,16 @@ import {
 } from './services/storyService';
 
 function sanitizeStories(list: Story[]): Story[] {
-  return list.map((story) => {
+  // Deduplikasi awal: hilangkan cerita ganda (berdasarkan judul + nama kertas)
+  const seen = new Set<string>();
+  const uniqueList = list.filter((story) => {
+    const key = `${(story.title || '').trim().toLowerCase()}___${(story.authorPaperName || '').trim().toLowerCase()}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  return uniqueList.map((story) => {
     if (story.visibility === 'QUARANTINED') return story;
     const safety = inspectContent(story.title || '', story.content || '');
     if (safety.isQuarantined) {
